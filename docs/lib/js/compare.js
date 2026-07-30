@@ -89,8 +89,17 @@ async function boot() {
 
   // Newest init first — the live board leads with the most recent scores.
   S.inits = manifest.inits.slice().sort((a, b) => b.init_time.localeCompare(a.init_time));
-  S.init = S.inits[0];
-  S.cityId = (manifest.cities[0] || {}).id;
+
+  // ?city= and ?init= let map.html's popups link here without losing the place
+  // the reader clicked. Both are validated against the manifest rather than
+  // trusted: a stale bookmark must land on the default page, not fetch a
+  // points/<init>/<city>.json that does not exist and fail blank.
+  const q = new URLSearchParams(location.search);
+  S.init = S.inits.find((i) => i.init_time === q.get("init")) || S.inits[0];
+  const asked = q.get("city");
+  const known = (manifest.cities || []).some((c) => c.id === asked)
+    && S.init.points.cities.includes(asked);
+  S.cityId = known ? asked : (manifest.cities[0] || {}).id;
   S.variable = null;
   S.active = null;
 

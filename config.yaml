@@ -128,6 +128,65 @@ display:
   map_leads: [24, 48, 72, 96, 120]
   map_resolution_deg: 1.0
 
+  # Which colour ramp each variable's *forecast* field is drawn with. Error
+  # fields ignore this entirely and always use the diverging ramp pinned at
+  # zero — sign is the only thing an error map exists to show.
+  #
+  # Ramp names are defined in docs/lib/js/colormap.js, which also documents why
+  # a variable earns a ramp other than the viridis default: it takes a genuine
+  # pre-existing reader convention (cold is blue, dry is white) to beat a
+  # perceptually uniform ramp. Anything not listed here gets viridis.
+  map_palettes:
+    t2m:   temperature
+    t850:  temperature
+    tp06:  precip
+    u10m:  wind
+    v10m:  wind
+
+  # Street cartography for map.html: roads, towns, water. Off at global zooms,
+  # switched on automatically past `basemap_zoom` — a 1 deg field has nothing to
+  # say at street scale, so this is orientation for a reader who has already
+  # zoomed in to ask "where exactly is this", not a second data layer.
+  #
+  # These are WMS endpoints rather than the usual {z}/{x}/{y} tile services, and
+  # that is forced rather than chosen. The map's CRS is EPSG:4326 (see
+  # docs/lib/js/map.js) while every CDN raster basemap — CARTO, OSM's own,
+  # Stamen — is pre-rendered in Web Mercator, and a projected raster cannot be
+  # reprojected in the browser. Using one would mean moving the map to
+  # EPSG:3857, which truncates at ±85.05° and would cut Antarctica and most of
+  # the Arctic off a *global weather* map. A WMS renders per request in whatever
+  # CRS the request names, so it costs a slower tile and keeps the poles.
+  #
+  # `over: true` means the layer is transparent and is drawn *above* the field,
+  # which is why it is first: labels and roads over a full-strength field beat
+  # a full basemap with the field faded down to see through it. The opaque ones
+  # are drawn beneath and dim the field to `field_opacity`.
+  #
+  # Adding an entry is all it takes to add a button; the page builds the control
+  # from this list. Attribution is mandatory — it is rendered as a chip on the
+  # map whenever a layer is on, and these services are used on their terms.
+  map:
+    max_zoom: 10             # was 6; street scale needs the extra levels
+    basemap_zoom: 6          # auto-on at and above this zoom, auto-off below
+    field_opacity: 0.72      # field alpha while an opaque basemap sits under it
+    basemaps:
+      - id: labels
+        label: Roads
+        url: "https://ows.terrestris.de/osm/service"
+        layers: OSM-Overlay-WMS
+        over: true
+        attribution: 'Roads &amp; places &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, rendered by <a href="https://www.terrestris.de/">terrestris</a>'
+      - id: streets
+        label: Streets
+        url: "https://ows.terrestris.de/osm/service"
+        layers: OSM-WMS
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, rendered by <a href="https://www.terrestris.de/">terrestris</a>'
+      - id: terrain
+        label: Terrain
+        url: "https://ows.terrestris.de/osm/service"
+        layers: TOPO-OSM-WMS
+        attribution: 'Terrain &amp; OSM &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, rendered by <a href="https://www.terrestris.de/">terrestris</a>'
+
 paths:
   data: data
   # GitHub Pages serves a branch's root or /docs only — hence "docs", not

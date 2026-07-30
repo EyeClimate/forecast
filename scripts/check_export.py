@@ -278,12 +278,20 @@ FIXTURE_MANIFEST = {
     "leads": [6, 12, 18],
     "variables": {
         "t2m": {"label": "2 m temperature", "units": "K", "kind": "state",
-                "decimals": 2},
+                "decimals": 2, "palette": "temperature"},
         "tp06": {"label": "Precipitation (6 h accumulation)", "units": "mm/6h",
-                 "kind": "precip", "decimals": 3, "accumulation_hours": 6},
+                 "kind": "precip", "decimals": 3, "palette": "precip",
+                 "accumulation_hours": 6},
     },
     "cities": [{"id": "sao-paulo", "name": "São Paulo", "lat": -23.55,
                 "lon": -46.63}],
+    "map": {
+        "max_zoom": 10, "basemap_zoom": 6, "field_opacity": 0.72,
+        "basemaps": [{"id": "labels", "label": "Roads",
+                      "url": "https://example.invalid/wms",
+                      "layers": "OSM-Overlay-WMS", "over": True,
+                      "attribution": "© OpenStreetMap contributors"}],
+    },
     "inits": [{
         "init_time": "2026-07-28T00:00:00Z",
         "regime": "realtime",
@@ -367,6 +375,15 @@ MANIFEST_MUTATIONS = [
      lambda d: d["series_statuses"].append("probably_fine")),
     ("city list emptied", lambda d: d.update(cities=[])),
     ("fields section replaced by a list", lambda d: d.update(fields=[])),
+    ("basemap with no attribution",
+     lambda d: d["map"]["basemaps"][0].pop("attribution")),
+    # http, not https. The site is served over https, so a mixed-content tile
+    # is blocked outright — the basemap would simply never appear, with nothing
+    # in the page to say why.
+    ("basemap over plain http",
+     lambda d: d["map"]["basemaps"][0].update(url="http://example.invalid/wms")),
+    ("map block missing basemaps", lambda d: d["map"].pop("basemaps")),
+    ("field opacity of zero", lambda d: d["map"].update(field_opacity=0)),
 ]
 
 

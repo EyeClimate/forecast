@@ -173,8 +173,9 @@ conda run -n earth2 python -m scoreboard.export [--init YYYY-MM-DDTHH] [--force]
   `data/points.parquet`; the truth half is fetched here, because ERA5 and GFS
   analysis stay available long after the forecast zarr does not.
 - **`manifest.json`** — what exists and how to read it: inits, models, leads,
-  variables, cities, per-init regime/tier/provenance, and a `fields` section
-  reserved for the gridded export.
+  variables, cities, per-init regime/tier/provenance, a `fields` section for the
+  gridded export, and a `map` section carrying `config.yaml`'s `display.map`
+  (zoom limits and the basemap list) so no page hardcodes them.
 
 Two behaviours are load-bearing rather than incidental:
 
@@ -285,6 +286,137 @@ over ~6 models; the same six models measure 4.3–5.0 MiB, so the plan's figure 
 right and slightly conservative. `config.yaml` stays at **1.0°** for now, per
 E4's "start at 1.0° for fast iteration" — raising it to 0.5° is a one-line
 change once `docs/map.html` exists, and needs the §7 repo-growth decision first.
+
+## Map rendering
+
+`docs/map.html` draws those PNGs. Everything below is presentation — no stored
+data changes — but each piece is the kind of choice that is invisible when wrong,
+so the reasoning is recorded here and in the source.
+
+**Per-variable colour ramps.** `config.yaml`'s `display.map_palettes` assigns
+each variable a ramp by name; `export.py` writes the assignment into
+`manifest.json`, and `docs/lib/js/colormap.js` holds the ramps. Unlisted
+variables get viridis. The bar for beating viridis is a genuine pre-existing
+reader convention: temperature is the clear case, because a reader decodes blue
+and red directly without consulting the colourbar, and viridis asks them to
+suppress a mapping they cannot suppress. **Error views ignore the assignment
+entirely** and always use the diverging ramp pinned at zero — sign is the only
+thing an error map exists to show. A ramp name that `colormap.js` does not define
+raises at export time rather than silently falling back.
+
+**Display units.** `docs/lib/js/units.js` converts at render time only; storage
+stays SI everywhere. K→°C/°F, Pa→hPa/inHg, m²/s²→dam geopotential height,
+m/s→mph. The one hazard it exists to contain: **an error field is a difference,
+so offset units must convert as a delta** — a 2 K error is a 2 °C error, not
+−271 °C. Absolute and delta conversions are separate functions per unit and the
+caller must say which it wants. `npm run check:units` covers that specifically,
+including sign preservation and zero-stays-zero across every unit and system.
+
+**Colour scale modes.** Global (default) uses the scale `manifest.json`
+publishes, which is comparable across leads, models and panes. *Stretch to view*
+recomputes from the 2nd–98th percentile of the data inside the viewport on every
+`moveend`. Percentiles, not min/max: one Antarctic cell at 197 K otherwise sets
+the floor for the whole world. Two constraints hold it honest — in side-by-side
+both panes share one scale derived from both, and stretched error scales are
+re-symmetrised about zero so the ramp's neutral grey still means zero. Stretching
+an *anchored* palette costs the colours their absolute meaning, which is the very
+thing that justified choosing that palette, so the page says so on screen when
+that happens.
+
+**Geography.** `scripts/vendor_geography.py` fetches Natural Earth 50 m
+coastlines and country borders, simplifies them, and writes
+`docs/lib/vendor/*.json` (committed — at global zooms the page makes no external
+requests). Raw 50 m is 2.3 MB; Douglas–Peucker at 0.02° with 2-decimal rounding
+brings it to ~205 KB gzipped. The tolerance was tied to a `maxZoom` of 6, where
+one pixel is ~0.02°; at the current `maxZoom` of 10 it is ~15 px of visible
+stair-stepping, which is one of the reasons the vendored layers stand down as
+soon as a basemap is on. A 30° graticule is generated in JS, and city names from
+`manifest.json`'s `cities` appear at zoom ≥ 3 with a paint-order halo, since they
+sit directly on a saturated field.
+
+**Street basemap.** Past zoom `display.map.basemap_zoom` (6) the map switches on
+a basemap and switches it off again on the way out, until the reader picks one
+explicitly — an explicit choice is remembered and ends the automatic behaviour.
+At world scale a 1° field wants a clean outline, not street cartography; at
+street scale a coastline has stopped answering "where exactly is this".
+
+The entries live in `config.yaml`'s `display.map.basemaps` and reach the page
+through `manifest.json`; adding one adds a button, and `export.py` refuses an
+entry with no attribution. Three ship: **Roads** (transparent OSM roads and place
+names drawn *over* a full-strength field — the default, and the reason it is
+listed first), **Streets** and **Terrain** (opaque, drawn *under* the field,
+which is dimmed to `field_opacity` with a slider to override).
+
+**These are WMS endpoints, not `{z}/{x}/{y}` tile services, and that is forced.**
+The map's CRS is `EPSG:4326`, while every CDN raster basemap — CARTO, OSM's own,
+Stamen — is pre-rendered in Web Mercator, and a projected raster cannot be
+reprojected in the browser. Using one would mean moving the map to `EPSG:3857`,
+which truncates at ±85.05° and would cut Antarctica and most of the Arctic off a
+*global weather* map. A WMS renders per request in whichever CRS the request
+names, so it costs a slower tile and keeps the poles. `check:map` asserts
+`SRS=EPSG:4326` on the generated request for exactly this reason: a Mercator
+source would look nearly right near the equator and drift further north, which is
+the kind of wrong that ships.
+
+Transparent layers go in a custom Leaflet pane at z-index 450 — above the field's
+overlay pane (400), below the marker pane (600) — and pass pointer events
+through. Opaque ones stay in the default tile pane, which is already below the
+field. While any basemap is on, the vendored coastline and borders come off and
+our city *names* are hidden (the basemap prints its own); the *dots* stay,
+because they mean something different — see below.
+
+**City popups.** The 32 dots are exactly the points the pipeline sampled out of
+every forecast zarr, so a dot means "there is a per-model series here", not
+"there is a city here" — which is why they survive a basemap that labels far more
+places. Clicking one reads `points/<init>/<city>.json`, the same document
+`compare.html` draws: every model at that lead, ranked by absolute error, against
+the truth it was scored on, with a deep link through to `compare.html?city=…`.
+Clicking anywhere else reads the *raster* instead — one nearest-cell value per
+pane. The two disagree slightly by construction (bilinear from the zarr versus
+nearest-cell from a 1° PNG) and the popups say which they are. Open popups
+re-render on every redraw, so scrubbing the lead slider moves the numbers rather
+than leaving a stale reading pinned to the map.
+
+**Longitude wraps; latitude does not.** Every layer — field overlay, coastlines,
+borders, graticule, city labels — is drawn three times, at −360°, 0° and +360°,
+and `worldCopyJump` folds the centre back into the middle copy when it crosses
+the antimeridian. Because the copies are identical the fold is invisible, so
+panning east or west is continuous and the Pacific has no seam. `maxBounds` still
+walls latitude (its actual job — no blank page above the pole) but its longitude
+range is set absurdly wide, since Leaflet has no latitude-only bounds.
+
+Three copies suffice, and the margin is worth knowing: at minZoom the viewport is
+at most 288° wide (the world is 2:1 and the viewport is wider, so latitude binds
+first), and `worldCopyJump` keeps the centre within ±180°, so the visible span
+never leaves −324°..324° — inside the −540°..540° the copies cover. **A viewport
+wider than 2:1 would make longitude bind instead and break that argument.**
+
+Geography is drawn with one `L.polyline` per layer per copy, *not* `L.geoJSON`:
+Leaflet renders a multi-polyline as a single `<path>`, so the 1186 coastline and
+389 border features collapse from 9558 SVG elements to 18. Nothing styles by
+attribute, so nothing is lost. The primary field copy carries
+`.fieldcopy-primary` so `check_map_render.js` can find the one anchored at
+−180..180.
+
+**Raster quality.** Fields are rolled to −180, bicubically upsampled 4× in
+*value* space, then coloured through a 256-entry LUT — in that order. Rolling
+first puts the upsampler's longitude wrap at the dateline; interpolating values
+rather than colours keeps every pixel a colour the ramp actually contains; the
+LUT removes a million per-pixel array allocations. Upsampling adds no information
+1° data lacks, but replaces the browser's bilinear facets with a smooth surface.
+Redraw is ~70 ms at 1440×724. Missing cells stay transparent rather than being
+interpolated from their neighbours.
+
+```bash
+npm run check:map      # orientation, alignment, layout, stretch scaling,
+                       # city popups, basemap wiring
+npm run check:units    # absolute vs delta conversion
+```
+
+`check:map` ignores the basemap hosts in its network assertions and never
+requires a tile to arrive — it checks the request the page *builds*, so the gate
+passes offline. What it does assert on the network is the opposite direction:
+**no off-origin request is made at all until a basemap is asked for.**
 
 ## Daily automation
 
@@ -445,6 +577,9 @@ scoreboard/
 scripts/
   check_export.py        # gate for everything export.py writes
   check_fields.py        # gate for the PNGs: decode back, assert <= half a step
+  check_map_render.js    # gate for map.html: orientation, alignment, stretch
+  check_units.mjs        # gate for units.js: absolute vs delta conversion
+  vendor_geography.py    # fetch + simplify Natural Earth into docs/lib/vendor/
 data/                    # gitignored
   forecasts/<model>/<init>.zarr
   metrics.parquet         # region-aggregated scores
@@ -455,6 +590,10 @@ docs/                    # GitHub Pages root (branch: main, folder: /docs)
   assets/                # PNGs for charts.html (gitignored)
   lib/                   # AUTHORED front-end code, committed
     css/site.css         #   shell shared by all pages
+    js/colormap.js       #   per-variable ramps + diverging error ramp + LUT
+    js/units.js          #   display units; absolute and delta conversions
+    js/field.js          #   PNG decode, sampling, viewport percentiles, upsample
+    vendor/              #   leaflet + Natural Earth coastlines/borders (50 m)
   data/                  # GENERATED payloads the explorer pages fetch, committed
     models.json  manifest.json  points/<init>/<city>.json  schema/
 ```

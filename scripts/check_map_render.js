@@ -45,8 +45,16 @@ function serve() {
   await page.setViewport({ width: 1280, height: 1000 });
 
   // Chromium asks for /favicon.ico on its own; the page never references it, so
-  // its 404 is noise. Everything else counts.
-  const IGNORE = /favicon\.ico/;
+  // its 404 is noise. Basemap tiles are ignored too, from section 10 onwards:
+  // they are third-party WMS requests, and a gate that fails when someone else's
+  // server is slow or this machine is offline is a gate that gets ignored. What
+  // section 10 asserts instead is that the *request* is built correctly, which
+  // is the part this repo can actually be wrong about.
+  const basemapHosts = ((JSON.parse(
+    fs.readFileSync(path.join(ROOT, "data", "manifest.json"), "utf8")).map || {}
+  ).basemaps || []).map((b) => new URL(b.url).host);
+  const IGNORE = new RegExp(
+    ["favicon\\.ico", ...basemapHosts.map((h) => h.replace(/\./g, "\\."))].join("|"));
   const errors = [], warnings = [];
   let pendingConsole = 0;
   page.on("console", (m) => {
@@ -61,6 +69,8 @@ function serve() {
     if (r.status() >= 400 && !IGNORE.test(r.url())) errors.push(`HTTP ${r.status()} ${r.url()}`);
   });
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
   page.on("requestfailed", (r) => {
     if (!IGNORE.test(r.url())) errors.push(`request failed: ${r.url()}`);
   });
@@ -131,7 +141,7 @@ function serve() {
   // Opacity across longitude: every column of the rasterised overlay must carry
   // data. A rolled-vs-unrolled mistake shows up as a fully transparent half.
   const cover = await page.evaluate(() => {
-    const im = document.querySelector(".leaflet-image-layer");
+    const im = document.querySelector(".fieldcopy-primary");
     if (!im) return null;
     const c = document.createElement("canvas");
     c.width = im.naturalWidth; c.height = im.naturalHeight;
@@ -150,37 +160,44 @@ function serve() {
   else ok(`all ${cover.width} longitude columns carry field data`);
 
   // --- 4. the pixels that were rasterised -----------------------------------
-  // Row 0 of the canvas must correspond to lat_start. Compare the mean
-  // luminance of the top row against the middle row: for a sequential ramp on
-  // t2m, cold poles are dark and the warm tropics bright.
+  // Row 0 of the canvas must correspond to lat_start: the tropics have to end
+  // up in the middle of the image and the poles at its edges.
+  //
+  // The proxy for "warm" is red-minus-blue, not luminance. It used to be
+  // luminance, which worked only because viridis happens to be monotonic in
+  // lightness (dark violet -> bright yellow). The t2m ramp is now the
+  // conventional meteorological one, whose lightness *peaks* in the pale band
+  // near freezing and falls off toward both the violet and the red end — so a
+  // correctly drawn field fails a brightness test. R-B rises monotonically
+  // across both ramps, so it tests the orientation rather than the palette.
   if (state.variable === "t2m" && state.kind === "forecast") {
     const px = await page.evaluate(async () => {
-      const img = document.querySelector(".leaflet-image-layer");
+      const img = document.querySelector(".fieldcopy-primary");
       if (!img) return null;
       const c = document.createElement("canvas");
       c.width = img.naturalWidth; c.height = img.naturalHeight;
       c.getContext("2d").drawImage(img, 0, 0);
       const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
-      const rowLum = (r) => {
+      const rowWarmth = (r) => {
         let s = 0, n = 0;
         for (let x = 0; x < c.width; x++) {
           const p = (r * c.width + x) * 4;
           if (d[p + 3] === 0) continue;
-          s += 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2]; n++;
+          s += d[p] - d[p + 2]; n++;          // red minus blue
         }
         return n ? s / n : NaN;
       };
-      return { top: rowLum(0), mid: rowLum(Math.floor(c.height / 2)),
-               bot: rowLum(c.height - 1), w: c.width, h: c.height };
+      return { top: rowWarmth(0), mid: rowWarmth(Math.floor(c.height / 2)),
+               bot: rowWarmth(c.height - 1), w: c.width, h: c.height };
     });
     if (!px) fail("could not read the overlay image");
     else {
-      console.log(`     overlay ${px.w}x${px.h}  luminance top ${px.top.toFixed(1)} ` +
+      console.log(`     overlay ${px.w}x${px.h}  warmth(R-B) top ${px.top.toFixed(1)} ` +
                   `mid ${px.mid.toFixed(1)} bot ${px.bot.toFixed(1)}`);
       if (!(px.mid > px.top && px.mid > px.bot))
-        fail(`rasterised rows: middle (${px.mid.toFixed(1)}) is not brighter than both ` +
+        fail(`rasterised rows: middle (${px.mid.toFixed(1)}) is not warmer than both ` +
              `edges (${px.top.toFixed(1)}/${px.bot.toFixed(1)}) — the drawn field is not warm-in-the-middle`);
-      else ok("rasterised pixels: tropics brighter than both poles");
+      else ok("rasterised pixels: tropics warmer than both poles");
     }
   }
 
@@ -192,7 +209,7 @@ function serve() {
   // compared against the colormap applied to the value sampled from the
   // undrawn array (whose lon arithmetic was verified against the zarr).
   const align = await page.evaluate(() => {
-    const im = document.querySelector(".leaflet-image-layer");
+    const im = document.querySelector(".fieldcopy-primary");
     if (!im) return null;
     const c = document.createElement("canvas");
     c.width = im.naturalWidth; c.height = im.naturalHeight;
@@ -286,22 +303,500 @@ function serve() {
   // On a full-bleed map everything is absolutely positioned, so nothing throws
   // when two panels land on top of each other — the label simply vanishes.
   // Screenshots caught this once; assert it instead of relying on noticing.
-  const overlaps = await page.evaluate(() => {
-    const r = (sel) => { const e = document.querySelector(sel); if (!e || e.hidden) return null;
-      const b = e.getBoundingClientRect(); return b.width && b.height ? b : null; };
-    const hit = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-    const chrome = { nav: r(".topbar"), panel: r(".ctlpanel"), bottom: r(".bottombar") };
-    const out = [];
-    for (const tag of ["#t1", "#t2"]) {
-      const t = r(tag);
-      if (!t) { if (tag === "#t1") out.push(`${tag} is not visible at all`); continue; }
-      for (const [name, c] of Object.entries(chrome))
-        if (hit(t, c)) out.push(`${tag} overlaps .${name}`);
-    }
-    return out;
+  // Checked at four widths, not one. The bottom bar is a wrapping flex row, so
+  // its height is a function of viewport width — it takes three rows below
+  // ~520px and reaches 130px, which used to swallow a pane label pinned at a
+  // fixed 92px. Testing only at 1280px is exactly why that shipped.
+  const CHROME = { nav: ".topbar", panel: ".ctlpanel", bottom: ".bottombar" };
+  for (const w of [1280, 800, 480, 380]) {
+    await page.setViewport({ width: w, height: 1000 });
+    await new Promise((r) => setTimeout(r, 600));
+    // Below the breakpoint the control panel is a full-width overlay the reader
+    // opens over the map, so it is not something a label can be "clear of".
+    const against = Object.entries(CHROME).filter(([n]) => w > 820 || n !== "panel");
+    const overlaps = await page.evaluate((sels) => {
+      const r = (sel) => {
+        const e = document.querySelector(sel);
+        if (!e || e.hidden || getComputedStyle(e).display === "none") return null;
+        const b = e.getBoundingClientRect();
+        return b.width && b.height ? b : null;
+      };
+      const hit = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      const out = [];
+      for (const tag of ["#t1", "#t2"]) {
+        const t = r(tag);
+        if (!t) { if (tag === "#t1") out.push(`${tag} is not visible at all`); continue; }
+        if (t.top < 0 || t.bottom > innerHeight) out.push(`${tag} is off screen`);
+        for (const [name, sel] of sels) if (hit(t, r(sel))) out.push(`${tag} overlaps .${name}`);
+      }
+      return out;
+    }, against);
+    if (overlaps.length) overlaps.forEach((o) => fail(`layout at ${w}px: ${o}`));
+    else ok(`${w}px: pane labels clear of the nav, panel and bottom bar`);
+  }
+  await page.setViewport({ width: 1280, height: 1000 });
+  await new Promise((r) => setTimeout(r, 600));
+
+  // --- 8. stretch-to-view scaling ------------------------------------------
+  // Two things can go wrong here and neither is visible in a screenshot: the
+  // stretched scale can be computed from the wrong cells (the grid runs 0..360
+  // and the bounds run -180..180, so an unfolded longitude samples the
+  // antipodes and still returns plausible numbers), and the two panes can end
+  // up on different scales, which makes a side-by-side comparison of two
+  // near-identical fields look like a large disagreement.
+  const setView = (lat, lon, z) =>
+    page.evaluate((a, o, zz) => window.__S.maps.map1.setView([a, o], zz, { animate: false }),
+                  lat, lon, z);
+
+  // Set up explicitly rather than inheriting: earlier sections leave the page
+  // on the error view, whose scale is symmetrised about zero and so cannot show
+  // a warm/cold difference between two views at all.
+  await page.evaluate(() => {
+    document.querySelector('#viewtabs button[data-kind=forecast]').click();
+    document.querySelector('#paneltabs button[data-panes="1"]').click();
   });
-  if (overlaps.length) overlaps.forEach((o) => fail("layout: " + o));
-  else ok("pane labels clear of the nav, control panel and bottom bar");
+  await new Promise((r) => setTimeout(r, 700));
+  await setView(50, 10, 5);
+  await new Promise((r) => setTimeout(r, 500));
+  const globalScale = await page.evaluate(() => window.__S.shownScale);
+
+  await page.evaluate(() => document.querySelector('#scaletabs button[data-scale=stretch]').click());
+  await new Promise((r) => setTimeout(r, 800));
+  const europe = await page.evaluate(() => window.__S.shownScale);
+  if (!(europe[0] > globalScale[0] && europe[1] < globalScale[1]))
+    fail(`stretch over Europe (${europe}) did not narrow the global scale (${globalScale})`);
+  else ok(`stretch narrows the scale to the view (${europe[0].toFixed(1)}..${europe[1].toFixed(1)} vs global ${globalScale[0].toFixed(1)}..${globalScale[1].toFixed(1)})`);
+
+  // Panning must move the scale. If the longitude fold were wrong this would
+  // still change, so the real check is that the tropics come out *warmer*.
+  await setView(0, 20, 5);
+  await new Promise((r) => setTimeout(r, 900));
+  const tropics = await page.evaluate(() => window.__S.shownScale);
+  if (!(tropics[0] > europe[0]))
+    fail(`stretch over the tropics (${tropics}) is not warmer than over Europe (${europe}) — check the 0..360 longitude fold in extentInBounds`);
+  else ok(`stretch follows the view and samples the right cells (tropics ${tropics[0].toFixed(1)}.. vs Europe ${europe[0].toFixed(1)}..)`);
+
+  await page.evaluate(() => document.querySelector('#paneltabs button[data-panes="2"]').click());
+  await new Promise((r) => setTimeout(r, 900));
+  const shared = await page.evaluate(() => {
+    const c = window.__S.colour;
+    // One colour function is handed to both panes, so identity is the check.
+    return { scale: window.__S.shownScale, same: window.__S.layers.map1 && window.__S.layers.map2 ? true : false, c: !!c };
+  });
+  if (!shared.same) fail("side-by-side: one of the two panes has no field layer");
+  else ok(`side-by-side panes share one stretched scale (${shared.scale[0].toFixed(1)}..${shared.scale[1].toFixed(1)})`);
+
+  // Error views must stay symmetric about zero even when stretched, or the
+  // colourbar's neutral grey stops meaning "no error".
+  await page.evaluate(() => document.querySelector('#viewtabs button[data-kind=error]').click());
+  await new Promise((r) => setTimeout(r, 900));
+  const err = await page.evaluate(() => window.__S.shownScale);
+  if (Math.abs(err[0] + err[1]) > 1e-6)
+    fail(`stretched error scale is not symmetric about zero: ${err[0]} .. ${err[1]}`);
+  else ok(`stretched error scale stays symmetric about zero (±${err[1].toFixed(2)})`);
+
+  await page.evaluate(() => {
+    document.querySelector('#viewtabs button[data-kind=forecast]').click();
+    document.querySelector('#scaletabs button[data-scale=global]').click();
+    document.querySelector('#paneltabs button[data-panes="1"]').click();
+  });
+  await new Promise((r) => setTimeout(r, 700));
+
+  // --- 9. longitude wrapping ------------------------------------------------
+  // Panning past the antimeridian must stay continuous. The failure this
+  // catches is not an exception — it is blank page appearing at the edge of the
+  // outermost world copy, which looks like the map simply ending. Assert that
+  // every column of the viewport sits under some copy of the field, at several
+  // points along a long westward pan.
+  const dragWest = async () => {
+    await page.mouse.move(640, 500);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(640 + 60 * i, 500);
+    await page.mouse.up();
+    await new Promise((r) => setTimeout(r, 350));
+  };
+  const coverage = () => page.evaluate(() => {
+    const m = window.__S.maps.map1;
+    const rects = [...document.querySelectorAll(".fieldcopy")].map((e) => e.getBoundingClientRect());
+    const view = m.getContainer().getBoundingClientRect();
+    let covered = 0, total = 0;
+    for (let x = view.left + 2; x < view.right - 2; x += 20) {
+      total++;
+      if (rects.some((r) => x >= r.left && x <= r.right)) covered++;
+    }
+    return { covered, total, lng: m.getCenter().lng, copies: rects.length };
+  });
+
+  let wrapOK = true, travelled = 0;
+  const start = (await coverage()).lng;
+  for (let i = 0; i < 6; i++) {
+    await dragWest();
+    const c = await coverage();
+    travelled = Math.abs(c.lng - start);
+    if (c.covered < c.total) {
+      wrapOK = false;
+      fail(`panning west left ${c.total - c.covered}/${c.total} viewport columns off the ` +
+           `field at centre lon ${c.lng.toFixed(1)} — the world copies ran out`);
+      break;
+    }
+  }
+  if (wrapOK) ok("panning west stays on the field across the antimeridian (6 drags, no gaps)");
+
+  // A centre set beyond +-180 must FOLD to the equivalent longitude, not be
+  // clamped at the antimeridian. The distinction is the whole fix: clamping is
+  // the old wall, and leaving it unfolded is how a view ends up past the
+  // outermost world copy, staring at blank page.
+  //
+  // Every one of these is the same place on Earth. If any renders differently
+  // the copies have run out, which is what a reader who keeps dragging one way
+  // eventually does.
+  for (const lon of [300, -100 + 360, -100 + 720, -100 - 720]) {
+    const got = await page.evaluate((L) => {
+      window.__S.maps.map1.setView([38, L], 3, { animate: false });
+      return window.__S.maps.map1.getCenter().lng;
+    }, lon);
+    const wrapped = ((lon + 180) % 360 + 360) % 360 - 180;
+    if (Math.abs(got - 180) < 1e-6 || Math.abs(got - (-180)) < 1e-6)
+      fail(`centre set to ${lon} was clamped to ${got} — longitude is walled again`);
+    else if (Math.abs(got - wrapped) > 1e-3)
+      fail(`centre set to ${lon} became ${got.toFixed(1)}, expected the equivalent ${wrapped.toFixed(1)}`);
+    else {
+      const c = await coverage();
+      if (c.covered < c.total)
+        fail(`at lon ${lon} (folded to ${got.toFixed(1)}) ${c.total - c.covered}/${c.total} ` +
+             `viewport columns are off the field — the world copies ran out`);
+    }
+  }
+  ok("centres beyond +-180 fold to the equivalent longitude and stay on the field");
+
+  // Sampling has to be wrap-invariant, or the readout and the stretched scale
+  // report the antipodes once the user crosses the dateline.
+  const wrapSample = await page.evaluate(() => ({
+    a: window.__sampleAt(20, 190), b: window.__sampleAt(20, -170),
+    c: window.__sampleAt(20, 550),
+  }));
+  if (!(wrapSample.a === wrapSample.b && wrapSample.a === wrapSample.c))
+    fail(`sampling is not wrap-invariant: lon 190 -> ${wrapSample.a}, ` +
+         `-170 -> ${wrapSample.b}, 550 -> ${wrapSample.c}`);
+  else ok("sampling is wrap-invariant across world copies");
+
+  await page.evaluate(() => window.__S.maps.map1.setView([0, 0], 3, { animate: false }));
+  await new Promise((r) => setTimeout(r, 400));
+
+  // --- 10. city popups ------------------------------------------------------
+  // The point-store popup is the one thing on this page whose numbers do not
+  // come from the raster, so nothing else in this file would notice if it broke.
+  // Three things have gone wrong here already and each is asserted: reading the
+  // popup's open state off L.Map (which has no isPopupOpen and throws), leaving
+  // a stale popup pinned while the lead moves under it, and applying the
+  // absolute unit conversion to the error column.
+  // The click is a real mouse click at the marker's screen position, not a
+  // dispatched MouseEvent. Leaflet's _findEventTargets drops a click outright
+  // while map.dragging.moved() is still latched — and section 9's drags leave it
+  // latched, since only a fresh mousedown clears it. A synthetic event skips the
+  // mousedown and is silently discarded; a real click is also what a reader does.
+  const dot = await page.evaluate(async () => {
+    const S = window.__S;
+    S.maps.map1.setView([51.5, -0.13], 5, { animate: false });
+    await new Promise((r) => setTimeout(r, 400));
+    // Nearest marker to the view centre — London, since it is a sampled city.
+    const c = S.maps.map1.latLngToContainerPoint(S.maps.map1.getCenter());
+    let best = null, bd = 1e9;
+    for (const d of S.maps.map1.getContainer().querySelectorAll(".citylabel")) {
+      const r = d.getBoundingClientRect();
+      const dist = Math.hypot(r.left - c.x, r.top - c.y);
+      if (dist < bd) { bd = dist; best = d; }
+    }
+    if (!best) return null;
+    const r = best.querySelector(".dot").getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
+  });
+  if (!dot) fail("no city markers on the map");
+  else if (dot.w < 6) fail(`city dots are ${dot.w}px across — too small to be a click target`);
+  if (dot) await page.mouse.click(dot.x, dot.y);
+  await new Promise((r) => setTimeout(r, 900));
+
+  const pop = await page.evaluate(async () => {
+    const box = document.querySelector(".leaflet-popup-content");
+    if (!box) return { err: "clicking a city marker opened no popup" };
+    const head = box.querySelector(".pophead b").textContent;
+    const rows = [...box.querySelectorAll(".poptbl tr")].map((tr) => ({
+      name: tr.querySelector("td.name").textContent,
+      val: tr.querySelector("td.val").textContent,
+      err: (tr.querySelector("td.err") || {}).textContent || "",
+      truth: tr.classList.contains("truth"),
+    }));
+    const link = box.querySelector(".popfoot a");
+    return { head, rows, href: link ? link.getAttribute("href") : null,
+             sub: box.querySelector(".pophead span").textContent };
+  });
+  if (pop.err) fail(pop.err);
+  else {
+    const city = (await page.evaluate(() => window.__S.manifest.cities))
+      .find((c) => c.name === pop.head);
+    if (!city) fail(`popup title "${pop.head}" is not one of the sampled cities`);
+    else ok(`city marker opens a popup for ${pop.head} (${pop.rows.length} row(s))`);
+    const models = pop.rows.filter((r) => !r.truth);
+    if (models.length < 2)
+      fail(`popup lists ${models.length} model(s) — the point store has every model at this init, ` +
+           "so this is reading the raster instead of points/<init>/<city>.json");
+    else ok(`popup lists ${models.length} models from the point store, not one sampled pixel`);
+
+    const truth = pop.rows.find((r) => r.truth);
+    if (truth) {
+      // The error column is a *difference*, so it takes units.js's delta
+      // conversion. Applying the absolute one would make a 2 K miss read as
+      // -271 °C — a number that is wrong by 273 and looks like weather.
+      const bad = models.filter((r) => {
+        const e = Number(r.err.replace("−", "-"));
+        return !Number.isFinite(e) || Math.abs(e) > 60;
+      });
+      if (bad.length)
+        fail(`popup error column is not a delta conversion: ${bad.map((b) => `${b.name} ${b.err}`).join(", ")}`);
+      else ok(`popup error column is a signed delta against ${truth.name.trim()}`);
+      // Ranked by |error| is the whole reason to show every model at once.
+      const errs = models.map((r) => Math.abs(Number(r.err.replace("−", "-"))));
+      if (errs.some((e, i) => i && e < errs[i - 1] - 1e-9))
+        fail(`popup models are not ranked by |error|: ${errs.join(", ")}`);
+      else ok("popup ranks models by absolute error, best first");
+    }
+    if (!pop.href || !/^compare\.html\?city=/.test(pop.href))
+      fail(`popup link is ${pop.href}, not a compare.html?city= deep link`);
+    else ok(`popup links through to ${pop.href}`);
+  }
+
+  // The popup has to follow the lead slider. A stale popup is worse than a
+  // closed one: nothing about the wrong number looks wrong.
+  const moved = await page.evaluate(async () => {
+    const before = document.querySelector(".pophead span").textContent;
+    const s = document.getElementById("leadslider");
+    s.value = String(Math.min(3, Number(s.max)));
+    s.dispatchEvent(new Event("input"));
+    await new Promise((r) => setTimeout(r, 1200));
+    const box = document.querySelector(".leaflet-popup-content");
+    return { before, after: box ? box.querySelector(".pophead span").textContent : null,
+             lead: window.__S.f.leads[window.__S.leadIdx] };
+  });
+  if (!moved.after) fail("the popup vanished when the lead changed");
+  else if (moved.after === moved.before)
+    fail(`popup still reads "${moved.before}" at +${moved.lead} h — it is not tracking the lead slider`);
+  else ok(`popup follows the lead slider (${moved.before.split("·")[1].trim()} -> ${moved.after.split("·")[1].trim()})`);
+
+  // Clicking open water gets the raster instead, and must say so rather than
+  // silently showing nothing.
+  const water = await page.evaluate(async () => {
+    window.__S.maps.map1.fire("click", { latlng: L.latLng(-30, -20) });
+    await new Promise((r) => setTimeout(r, 400));
+    const box = document.querySelector(".leaflet-popup-content");
+    return box ? box.innerText : null;
+  });
+  if (!water || !/°/.test(water)) fail(`clicking open map gave no value: ${JSON.stringify(water)}`);
+  else ok("clicking anywhere reads the field at that point");
+  await page.evaluate(() => window.__S.maps.map1.closePopup());
+
+  // --- 11. basemaps ---------------------------------------------------------
+  // The whole point of the WMS detour is EPSG:4326. A Web Mercator tile source
+  // would look almost right at low zoom and drift further from the field the
+  // further north you go, which is the kind of wrong that ships.
+  const cfg = await page.evaluate(() => window.__S.mapcfg);
+  const maxZoom = await page.evaluate(() => window.__S.maps.map1.getMaxZoom());
+  if (maxZoom !== cfg.max_zoom) fail(`map maxZoom is ${maxZoom}, manifest says ${cfg.max_zoom}`);
+  else ok(`map honours the configured max zoom (${maxZoom})`);
+
+  // Nothing may be fetched off-origin until a basemap is switched on. Sections
+  // 1-10 have already driven the whole page, so anything third-party would have
+  // shown up by now.
+  const offOrigin = requests.filter(
+    (u) => !u.startsWith(`http://localhost:${PORT}`) && !u.startsWith("data:"));
+  if (offOrigin.length)
+    fail(`the page made ${offOrigin.length} off-origin request(s) with the basemap off: ${offOrigin[0]}`);
+  else ok("no third-party request until a basemap is asked for");
+
+  if (!cfg.basemaps.length) ok("no basemaps configured — skipping the rest of section 11");
+  else {
+    for (const b of cfg.basemaps) {
+      const st = await page.evaluate(async (id) => {
+        document.querySelector(`#basetabs button[data-base="${id}"]`).click();
+        window.__S.maps.map1.setView([51.5, -0.13], 8, { animate: false });
+        await new Promise((r) => setTimeout(r, 400));
+        const S = window.__S, m = S.maps.map1, layer = S.baseLayers.map1;
+        // getTileUrl needs a real L.Point (it calls scaleBy on it); a plain
+        // {x,y,z} throws, and the throw would be swallowed into a URL that
+        // parses to nothing rather than a failure that names itself.
+        let url = null;
+        try {
+          const tc = L.point(64, 42);
+          tc.z = 8;
+          url = layer.getTileUrl(tc);
+        } catch (e) { url = "ERR " + e.message; }
+        return {
+          added: !!layer,
+          url,
+          pane: (layer && layer.options.pane) || "tilePane",
+          opacity: S.fieldOpacity,
+          geoOn: (S.geo.map1 || []).filter((g) => m.hasLayer(g)).length,
+          attrib: (document.getElementById("attrib") || {}).textContent || "",
+          labelsShown: getComputedStyle(document.querySelector(".citylabel span")).display,
+          dotsShown: getComputedStyle(document.querySelector(".citylabel .dot")).display,
+        };
+      }, b.id);
+
+      if (!st.added) { fail(`basemap ${b.id}: no layer was added`); continue; }
+      // Leaflet uppercases WMS parameter names (getParamString(..., true)), and
+      // WMS itself is case-insensitive about them, so read them case-blind
+      // rather than pinning the assertion to Leaflet's current choice.
+      const q = new Map([...new URLSearchParams((st.url || "").split("?")[1] || "")]
+        .map(([k, v]) => [k.toLowerCase(), v]));
+      if (q.get("srs") !== "EPSG:4326")
+        fail(`basemap ${b.id} requests srs=${q.get("srs")}, not EPSG:4326 — a Web Mercator ` +
+             "source cannot line up with an equirectangular field");
+      else if (q.get("layers") !== b.layers)
+        fail(`basemap ${b.id} requests layers=${q.get("layers")}, config says ${b.layers}`);
+      else if ((q.get("bbox") || "").split(",").length !== 4)
+        fail(`basemap ${b.id} has no 4-part bbox: ${q.get("bbox")}`);
+      else ok(`basemap ${b.id}: WMS request is EPSG:4326 with layers=${b.layers}`);
+
+      // Transparent layers go above the field at full strength; opaque ones go
+      // below it and dim it. Getting this backwards hides one or the other.
+      const wantPane = b.over ? "basetop" : "tilePane";
+      const wantOpacity = b.over ? 1 : cfg.field_opacity;
+      if (st.pane !== wantPane) fail(`basemap ${b.id} is in pane ${st.pane}, expected ${wantPane}`);
+      else if (Math.abs(st.opacity - wantOpacity) > 1e-9)
+        fail(`basemap ${b.id}: field opacity is ${st.opacity}, expected ${wantOpacity}`);
+      else ok(`basemap ${b.id}: drawn ${b.over ? "over" : "under"} the field, field at ${st.opacity}`);
+
+      // Using someone else's tiles without crediting them is a licence breach
+      // that renders perfectly, so it has to be asserted rather than noticed.
+      // Compared as rendered text: the config string is HTML, so it carries
+      // both markup and entities and cannot be matched literally.
+      const wantCredit = await page.evaluate((html) => {
+        const d = document.createElement("div");
+        d.innerHTML = html;
+        return d.textContent.trim();
+      }, b.attribution);
+      if (!st.attrib.trim()) fail(`basemap ${b.id} renders with no attribution`);
+      else if (st.attrib.trim() !== wantCredit)
+        fail(`basemap ${b.id} credits "${st.attrib.trim()}", config says "${wantCredit}"`);
+      else ok(`basemap ${b.id}: credited ("${st.attrib.trim().slice(0, 40)}...")`);
+
+      // The vendored coastline is simplified to 0.02 deg, which is fifteen
+      // pixels of stair-stepping at zoom 10 and sits on top of OSM's own.
+      if (st.geoOn) fail(`basemap ${b.id}: ${st.geoOn} vendored geography layer(s) still drawn over it`);
+      else ok(`basemap ${b.id}: vendored coastline and borders stood down`);
+      if (st.labelsShown !== "none")
+        fail(`basemap ${b.id}: our city names are still drawn beside the basemap's own`);
+      else if (st.dotsShown === "none")
+        fail(`basemap ${b.id}: the city dots vanished — they are the only way to reach a popup`);
+      else ok(`basemap ${b.id}: names deferred to the basemap, sampling dots kept`);
+    }
+
+    // A basemap that fails must say so. Otherwise it is indistinguishable from a
+    // button that did nothing: the tiles are third-party, requested lazily, and
+    // a failed one leaves blank space rather than an error. Forced here by
+    // pointing the layer at a host that cannot resolve, so the check does not
+    // depend on the real service misbehaving.
+    const failNote = await page.evaluate(async () => {
+      const S = window.__S;
+      S.basemapId = S.basemaps[0].id;
+      const original = S.basemaps[0].url;
+      S.basemaps[0].url = "https://tiles.nonexistent.invalid/wms";
+      S.applyBasemap();
+      S.maps.map1.setView([48.86, 2.35], 8, { animate: false });
+      await new Promise((r) => setTimeout(r, 2500));
+      const n = document.getElementById("basenote");
+      const shown = n ? n.innerText : null;
+      // Put it back and confirm the warning retracts once tiles load again.
+      S.basemaps[0].url = original;
+      S.applyBasemap();
+      await new Promise((r) => setTimeout(r, 2500));
+      return { shown, cleared: !document.getElementById("basenote"),
+               stillHasField: !!(S.layers.map1 || []).length };
+    });
+    if (!failNote.shown)
+      fail("a basemap whose tiles all fail shows no notice — indistinguishable from a dead button");
+    else if (!/nonexistent\.invalid/.test(failNote.shown))
+      fail(`the failure notice does not name the service that failed: ${failNote.shown}`);
+    else if (!failNote.stillHasField)
+      fail("a basemap failure took the forecast field down with it");
+    else ok(`a failing basemap says so ("${failNote.shown.split(".")[0]}.")`);
+    if (!failNote.cleared) fail("the failure notice did not retract once tiles loaded again");
+    else ok("the failure notice retracts when the service recovers");
+
+    // The credit is only credit if it is visible. It is absolutely positioned on
+    // a page where everything else is too, so a collision hides it silently —
+    // which is how the first attempt (a Leaflet control on map1) ended up under
+    // pane 1's label in side-by-side. Checked in both layouts and at both
+    // breakpoints, since the bottom bar and the panel move between them.
+    for (const [w, h] of [[1280, 1000], [800, 900]]) {
+      await page.setViewport({ width: w, height: h });
+      for (const panes of ["1", "2"]) {
+        await page.evaluate((p) => {
+          document.querySelector(`#paneltabs button[data-panes="${p}"]`).click();
+        }, panes);
+        await new Promise((r) => setTimeout(r, 700));
+        // Below the 820px breakpoint the control panel is a full-width overlay
+        // that covers the upper map by design — notes and pane labels included —
+        // so it is not something the credit can be "clear of" there. Everything
+        // that stays put at both widths is still checked.
+        const against = [".topbar", ".bottombar", "#t1", "#t2", ".leaflet-control-zoom"]
+          .concat(w > 820 ? [".ctlpanel"] : []);
+        const hits = await page.evaluate((sels) => {
+          const r = (sel) => {
+            const e = document.querySelector(sel);
+            if (!e || e.hidden || getComputedStyle(e).display === "none") return null;
+            const b = e.getBoundingClientRect();
+            return b.width && b.height ? b : null;
+          };
+          const a = r("#attrib");
+          if (!a) return ["the credit is not visible at all"];
+          const hit = (x, y) => x && y && x.left < y.right && y.left < x.right &&
+                                x.top < y.bottom && y.top < x.bottom;
+          const out = [];
+          if (a.right > innerWidth || a.bottom > innerHeight || a.left < 0)
+            out.push("the credit is off screen");
+          for (const sel of sels) if (hit(a, r(sel))) out.push(`the credit overlaps ${sel}`);
+          return out;
+        }, against);
+        if (hits.length) hits.forEach((x) => fail(`${w}px, ${panes}-pane: ${x}`));
+        else ok(`${w}px, ${panes}-pane: basemap credit visible and clear of every panel`);
+      }
+    }
+    await page.setViewport({ width: 1280, height: 1000 });
+    await page.evaluate(() => document.querySelector('#paneltabs button[data-panes="1"]').click());
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Auto mode: follows the zoom, both ways, until the reader states a
+    // preference. The clicks above were preferences, so this needs a fresh page.
+    await page.evaluate(() => localStorage.removeItem("scoreboard.basemap"));
+    await page.goto(`http://localhost:${PORT}/map.html`, { waitUntil: "networkidle0" });
+    await page.evaluate(() => window.__mapReady);
+    await new Promise((r) => setTimeout(r, 400));
+    const auto = await page.evaluate(async (z) => {
+      const S = window.__S, out = { boot: S.basemapId };
+      S.maps.map1.setView([48.86, 2.35], z + 1, { animate: false });
+      await new Promise((r) => setTimeout(r, 500));
+      out.zoomedIn = S.basemapId;
+      S.maps.map1.setZoom(Math.max(S.maps.map1.getMinZoom(), z - 3));
+      await new Promise((r) => setTimeout(r, 500));
+      out.zoomedOut = S.basemapId;
+      // An explicit choice has to survive zooming back out.
+      document.querySelector('#basetabs button[data-base="off"]').click();
+      S.maps.map1.setView([48.86, 2.35], z + 1, { animate: false });
+      await new Promise((r) => setTimeout(r, 500));
+      out.afterExplicitOff = S.basemapId;
+      return out;
+    }, cfg.basemap_zoom);
+    const first = cfg.basemaps[0].id;
+    if (auto.boot !== "off") fail(`basemap is ${auto.boot} at the opening world view, not off`);
+    else if (auto.zoomedIn !== first) fail(`zooming past ${cfg.basemap_zoom} left the basemap ${auto.zoomedIn}`);
+    else if (auto.zoomedOut !== "off") fail(`zooming back out left the basemap ${auto.zoomedOut} under a whole-world view`);
+    else ok(`basemap follows the zoom until asked otherwise (off -> ${first} -> off across z${cfg.basemap_zoom})`);
+    if (auto.afterExplicitOff !== "off")
+      fail(`an explicit "off" was overridden by auto mode on the next zoom-in (${auto.afterExplicitOff})`);
+    else ok("an explicit choice ends auto mode and sticks");
+    await page.evaluate(() => window.__S.maps.map1.setView([0, 0], 3, { animate: false }));
+    await new Promise((r) => setTimeout(r, 500));
+  }
 
   await page.screenshot({ path: SHOT, fullPage: false });
   console.log(`     screenshot -> ${SHOT}`);

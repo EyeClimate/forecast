@@ -57,7 +57,98 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .pane { position: relative; overflow: hidden; }
 .leafletmap { position: absolute; inset: 0; background: var(--page); }
 .leaflet-container { background: var(--page); font: inherit; }
-.coast { fill: none; stroke: var(--ink); stroke-width: .8; opacity: .5; }
+/* Geography weight order: coast > border > graticule. All three are drawn over
+   a saturated field with nothing behind them, so weight is the only thing
+   separating them — if the graticule reads as strongly as the coastline, the
+   land/sea edge stops being findable at a glance. */
+.coast { fill: none; stroke: var(--ink); stroke-width: .9; opacity: .55; }
+.border { fill: none; stroke: var(--ink); stroke-width: .6; opacity: .3;
+  stroke-dasharray: 4 3; }
+.grat { fill: none; stroke: var(--ink); stroke-width: .5; opacity: .12; }
+
+/* City markers sit directly on the field, so the name needs a halo: paint-order
+   puts the stroke behind the fill, giving an outline that keeps the glyph
+   readable over both the pale and the dark end of any ramp.
+
+   The icon itself takes no pointer events — it is a zero-size anchor and a wide
+   invisible box over the map would eat drags. The dot and the name opt back in,
+   because those are the click target. */
+.citylabel { pointer-events: none; }
+.citylabel .dot, .citylabel span { pointer-events: auto; cursor: pointer; }
+.citylabel span {
+  position: absolute; left: 9px; top: -8px; white-space: nowrap;
+  font-size: 11px; font-weight: 650; letter-spacing: .01em;
+  color: var(--ink);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2.5px color-mix(in srgb, var(--page) 78%, transparent);
+  display: none;                       /* .zoomed turns them on; see below */
+}
+/* A ring rather than the old 3px pip. These are now the affordance for "this
+   place has a per-model series", so they have to look clickable and be big
+   enough to hit — 3px was neither. */
+.citylabel .dot {
+  position: absolute; left: -5px; top: -5px; width: 10px; height: 10px;
+  border-radius: 50%; box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--page) 82%, transparent);
+  background: var(--ink); opacity: .7;
+  transition: opacity .12s, transform .12s;
+}
+.citylabel .dot:hover { opacity: 1; transform: scale(1.25); }
+/* Names appear once the reader has zoomed in far enough to be asking "where
+   exactly is this", and never under a basemap, which prints its own. */
+.leaflet-container.zoomed:not(.basemap-on) .citylabel span { display: block; }
+
+/* ---------- popups ---------- */
+.mappop .leaflet-popup-content-wrapper {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  color: var(--ink); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); backdrop-filter: blur(10px);
+}
+.mappop .leaflet-popup-tip {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid var(--border);
+}
+.mappop .leaflet-popup-content { margin: 11px 13px; font: inherit; line-height: 1.4; }
+.mappop a.leaflet-popup-close-button { color: var(--muted); }
+.pophead b { display: block; font-size: 13.5px; font-weight: 650; }
+.pophead span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 7px; }
+.poptbl { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.poptbl td { padding: 2px 0; white-space: nowrap; }
+.poptbl td.name { padding-right: 12px; }
+/* Values and errors are read down the column and compared, so they are
+   monospaced and right-aligned — a proportional column of numbers cannot be
+   scanned for magnitude. */
+.poptbl td.val, .poptbl td.err {
+  text-align: right; font-family: var(--mono); font-size: 11.5px;
+}
+.poptbl td.err { padding-left: 10px; color: var(--muted); }
+.poptbl tr.truth td { font-weight: 650; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.poptbl tr.truth + tr td { padding-top: 5px; }
+.poptbl .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.popfoot { font-size: 11px; color: var(--muted); margin-top: 7px; line-height: 1.45; }
+.popfoot a { color: var(--accent-ink); font-weight: 600; text-decoration: none; }
+.popfoot a:hover { text-decoration: underline; }
+
+/* Basemap credit. Shown and hidden with the layer that requires it, so it is
+   never an empty box at global zoom.
+
+   Page chrome rather than Leaflet's own attribution control, and positioned by
+   elimination: the bottom bar owns everything left of right:292px, the control
+   panel owns the top right, and the pane labels sit at bottom:92px of each pane.
+   That leaves the strip between the bottom bar's right edge and the zoom
+   control. check_map_render.js asserts it stays clear of all four.
+
+   That strip is exactly 246px wide (292px of bottom bar less the 46px the zoom
+   control occupies), so the width is capped below it rather than left to the
+   length of whatever credit string config carries. */
+.attrib { right: 52px; bottom: 14px; max-width: 224px; padding: 4px 9px;
+  font-size: 10.5px; line-height: 1.35; color: var(--muted); }
+.attrib a { color: var(--ink-2); }
+.attrib[hidden] { display: none; }
+
+#opacwrap input[type=range] { width: 100%; accent-color: var(--accent); }
+#opacval { color: var(--ink-2); font-family: var(--mono); text-transform: none;
+  letter-spacing: 0; margin-left: 4px; }
 
 /* floating chrome */
 .float { position: absolute; z-index: 1000; background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -94,8 +185,16 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
    control panel (right); at a 1280px viewport in side-by-side each pane is only
    640px, so both a corner-anchored and a top-centred tag still land underneath
    them — the left pane was silently unlabelled. Nothing errors when absolutely
-   positioned chrome collides, it just disappears. */
-.paneltag { position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%);
+   positioned chrome collides, it just disappears.
+
+   The offset is measured, not fixed at 92px, because the bottom bar's height is
+   not a constant: below ~520px it wraps to two and then three rows and grows
+   upward until it swallows a label sitting at a fixed offset. map.js publishes
+   the bar's height as --barh and updates it from a ResizeObserver. The 64px
+   fallback is the bar's height on a wide viewport, so the pre-measurement paint
+   lands where the old constant put it. */
+.paneltag { position: absolute; bottom: calc(var(--barh, 64px) + 28px);
+  left: 50%; transform: translateX(-50%);
   z-index: 900; font-size: 12.5px; font-weight: 600; white-space: nowrap;
   display: flex; align-items: center; gap: 7px; padding: 6px 11px; }
 .paneltag .sw { width: 9px; height: 9px; border-radius: 3px; flex: none; }
@@ -105,9 +204,11 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .bottombar input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
 .leadlabel { font-family: var(--mono); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
 
+/* 210px, not 150: converting to °C put a decimal point on every tick, and five
+   of those do not fit in 150px without touching. */
 .cbar { display: flex; align-items: center; gap: 9px; }
-.cbar .bar { height: 10px; width: 150px; border-radius: 3px; border: 1px solid var(--border); }
-.cbar .ticks { display: flex; justify-content: space-between; width: 150px; font-size: 10px;
+.cbar .bar { height: 10px; width: 210px; border-radius: 3px; border: 1px solid var(--border); }
+.cbar .ticks { display: flex; justify-content: space-between; width: 210px; font-size: 10px;
   color: var(--muted); font-family: var(--mono); }
 .cbar .unit { font-size: 11px; color: var(--ink-2); max-width: 190px; }
 .readout { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; min-width: 150px; }
@@ -116,7 +217,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .note { font-size: 12.5px; color: var(--ink-2); background: color-mix(in srgb, var(--surface) 94%, transparent);
   border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0;
   padding: 9px 13px; box-shadow: var(--shadow); backdrop-filter: blur(10px); }
-.empty { color: var(--muted); padding: 60px 20px; text-align: center; }
+
+/* Fatal-error card. Centred rather than tucked in the .notes stack: if this is
+   showing, there is no map behind it to avoid covering. */
+.fatal { top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1100;
+  max-width: 460px; padding: 20px 24px; text-align: center; }
+.fatal h3 { margin: 0 0 8px; font-size: 15px; font-weight: 650; }
+.fatal p { margin: 0; font-size: 13px; color: var(--ink-2); }
+.fatal code { font-family: var(--mono); font-size: 12px; color: var(--accent-ink); }
 
 @media (max-width: 820px) {
   .ctlpanel { left: 12px; right: 12px; width: auto; top: 62px; max-height: 46%; }
@@ -124,6 +232,16 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   .panelbtn { display: inline-block; }
   .bottombar { right: 12px; }
   .maprow.two { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  /* The bottom edge is entirely spoken for here: the bar goes full width and
+     wraps to two or three rows, swallowing the strip the wide layout uses. The
+     nav is no better — it is 516px regardless of viewport, so beside it there is
+     nothing left below 780px. That leaves the band directly under the nav.
+
+     It shares that band with the notes stack and, when the reader opens it, the
+     control panel — which at this width covers the whole upper map by design,
+     notes and pane labels included. So the gate checks this against the nav, the
+     bar, the pane labels and the zoom control, and not against those two. */
+  .attrib { top: 88px; right: 12px; bottom: auto; max-width: 250px; text-align: right; }
 }
 </style>
 
@@ -148,6 +266,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   </nav>
 
   <div class="notes" id="notes"></div>
+  <div class="float fatal" id="fatal" hidden></div>
 
   <aside class="float ctlpanel" id="ctlpanel">
     <h2>Layer</h2>
@@ -168,6 +287,28 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
       <div class="tabs" id="viewtabs">
         <button data-kind="forecast" class="on">Forecast</button>
         <button data-kind="error">Error</button>
+      </div>
+    </div>
+    <div class="ctl" id="basewrap">
+      <label>Basemap</label>
+      <div class="tabs" id="basetabs"></div>
+    </div>
+    <div class="ctl" id="opacwrap" hidden>
+      <label for="opac">Field opacity <span id="opacval"></span></label>
+      <input type="range" id="opac" min="0.2" max="1" step="0.02">
+    </div>
+    <div class="ctl">
+      <label>Colour scale</label>
+      <div class="tabs" id="scaletabs">
+        <button data-scale="global" class="on" title="One scale for the whole globe — comparable across leads and models">Global</button>
+        <button data-scale="stretch" title="Rescale to the 2nd–98th percentile of what is on screen">Stretch to view</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Units</label>
+      <div class="tabs" id="unittabs">
+        <button data-units="metric">Metric</button>
+        <button data-units="imperial">Imperial</button>
       </div>
     </div>
     <div class="ctl">
@@ -196,6 +337,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
     </div>
     <span class="readout" id="readout"></span>
   </div>
+
+  <div class="float attrib" id="attrib" hidden></div>
 </div>
 
 <script src="lib/vendor/leaflet.js"></script>

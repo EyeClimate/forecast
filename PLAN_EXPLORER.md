@@ -90,7 +90,8 @@ forecast_scoreboard/
     │   │   └── map.js              #   Phase 2 page logic
     │   └── vendor/
     │       ├── leaflet.js  leaflet.css      # vendored, no CDN
-    │       └── coastlines-110m.json         # Natural Earth, ~200 KB
+    │       ├── coastlines-50m.json          # Natural Earth, simplified
+    │       └── borders-50m.json             #   both via scripts/vendor_geography.py
     ├── assets/                     # GENERATED matplotlib PNGs (gitignored)
     └── data/                NEW    # GENERATED, committed, retention-bounded
         ├── manifest.json           #   inits available, models, vars, leads, scales

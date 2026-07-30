@@ -46,6 +46,30 @@ def models_payload(cfg: dict) -> list[dict]:
         ) from e
 
 
+# Ramp names docs/lib/js/colormap.js defines. Kept here so a typo in
+# config.yaml fails at export time with a readable message rather than silently
+# drawing viridis on the page, where nobody would know it was a typo and not a
+# deliberate choice.
+MAP_PALETTES = ("viridis", "temperature", "precip", "wind")
+
+
+def variable_palette(cfg: dict, variable: str) -> str:
+    """The forecast colour ramp for `variable`, from `display.map_palettes`.
+
+    Only forecast fields use it — error fields are always drawn with the
+    diverging ramp pinned at zero, so the assignment does not apply to them.
+    """
+    table = cfg.get("display", {}).get("map_palettes") or {}
+    name = table.get(variable, "viridis")
+    if name not in MAP_PALETTES:
+        raise RuntimeError(
+            f"config.yaml `display.map_palettes.{variable}` is {name!r}, which "
+            f"docs/lib/js/colormap.js does not define. Known ramps: "
+            + ", ".join(MAP_PALETTES)
+        )
+    return name
+
+
 def write_models_json(cfg: dict, site: Path) -> Path:
     """Write docs/data/models.json from config.yaml's display block."""
     out = site / "data" / "models.json"
@@ -242,6 +266,54 @@ def cities_payload(cfg: dict) -> list[dict]:
             f"config.yaml `display.cities`: ids {sorted(dupes)} collide — two "
             "city names slugify to the same filename."
         )
+    return out
+
+
+# Defaults for `display.map`. The page has to work against a config that predates
+# this block, so every key is optional; an empty `basemaps` list simply means the
+# basemap control is not rendered at all.
+MAP_DEFAULTS = {"max_zoom": 6, "basemap_zoom": 6, "field_opacity": 0.72}
+
+# Keys copied out of each `display.map.basemaps` entry. Whitelisted rather than
+# passed through, so a stray key in config cannot end up as a Leaflet option that
+# silently changes how tiles are requested.
+_BASEMAP_KEYS = ("id", "label", "url", "layers", "over", "attribution", "max_zoom")
+
+
+def map_payload(cfg: dict) -> dict:
+    """`display.map` — the map page's viewport limits and basemap list.
+
+    Attribution is required, not defaulted: these are other people's tile
+    servers, and a basemap that renders without crediting the source is a
+    licence breach that looks exactly like a working feature.
+    """
+    raw = dict((cfg.get("display") or {}).get("map") or {})
+    out = {k: type(v)(raw.get(k, v)) for k, v in MAP_DEFAULTS.items()}
+
+    basemaps, seen = [], set()
+    for i, b in enumerate(raw.get("basemaps") or []):
+        for key in ("id", "label", "url", "layers", "attribution"):
+            if not str(b.get(key, "")).strip():
+                raise RuntimeError(
+                    f"config.yaml `display.map.basemaps[{i}]` has no {key!r} — "
+                    "every basemap needs an id, a label, a WMS endpoint, a layer "
+                    "name and an attribution string."
+                )
+        if b["id"] in seen:
+            raise RuntimeError(
+                f"config.yaml `display.map.basemaps`: duplicate id {b['id']!r}."
+            )
+        seen.add(b["id"])
+        basemaps.append({k: b[k] for k in _BASEMAP_KEYS if k in b})
+
+    # "off" is the page's own id for no basemap; a config entry claiming it
+    # would make that button unselectable.
+    if "off" in seen:
+        raise RuntimeError(
+            "config.yaml `display.map.basemaps`: 'off' is reserved — it is the "
+            "id map.js uses for no basemap."
+        )
+    out["basemaps"] = basemaps
     return out
 
 
@@ -794,11 +866,13 @@ def write_manifest(cfg: dict, site: Path) -> Path:
                 "units": UNITS.get(v, ""),
                 "kind": "precip" if v == CANONICAL_PRECIP else "state",
                 "decimals": DECIMALS.get(v, 3),
+                "palette": variable_palette(cfg, v),
                 **({"accumulation_hours": 6} if v == CANONICAL_PRECIP else {}),
             }
             for v in variables
         },
         "cities": cities_payload(cfg),
+        "map": map_payload(cfg),
         "inits": inits,
         # E4's gridded export: {init: {grid, encoding, models, variables ->
         # per-lead PNG scales}}. Empty until fields.py has run.
