@@ -89,13 +89,32 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
 
    - **`docs/index.html`** — the designed single-file page and the one
      visitors land on. It embeds the metrics as inline JSON, so it is fully
-     self-contained. Every publish rewrites, in place, exactly three things —
-     the `const DATA = {...};` blob, the header provenance "inits …" span,
-     and the footer "scores generated" timestamp (parquet mtime) — leaving
-     all other bytes untouched. Models present in the parquet but missing
-     from the page's hand-curated `MODELS` array trigger a loud warning;
-     colors are assigned manually, never invented. Committing this file and
-     pushing is what updates the live site (see Hosting below).
+     self-contained (~5 MB, ~1.9 MB gzipped). Values are stored **per init
+     time**, not pre-averaged:
+
+     ```
+     data[model][region][variable][metric][init_idx] = [value per lead]
+     ```
+
+     which is what lets the page re-average over any **init window** the
+     visitor picks — month-preset chips (auto-derived from the init times
+     present) plus two date inputs for an arbitrary start/end. Every chart,
+     leaderboard, and table recomputes from the selected window, and the
+     mean at each lead uses only the inits that actually have that lead, so
+     a part-scored real-time init contributes its finished leads without
+     skewing the rest.
+
+     Each publish rewrites, in place, only these spots — the `const DATA`
+     blob, the header "inits …" span, the `init source` / `truth` / `tier`
+     chips, and the footer "scores generated" timestamp (parquet mtime) —
+     leaving all other bytes untouched. Models present in the parquet but
+     missing from the page's hand-curated `MODELS` array trigger a loud
+     warning; colors are assigned manually, never invented. Committing this
+     file and pushing is what updates the live site (see Hosting below).
+
+     Page weight grows with init count (~130 KB per init). Past a few
+     hundred inits, switch to monthly aggregates or on-demand JSON files
+     rather than one inlined blob.
    - **`docs/charts.html`** — the plain matplotlib page: scorecard table at
      24/72/120 h, RMSE and ACC lead-time curves, precip CSI/FSS panels, and
      a forecast-vs-truth precip map for the latest scored init. Regenerated

@@ -196,21 +196,42 @@ def _init_range_label(inits: list) -> str:
     return label
 
 
+def _round(v: float):
+    """Magnitude-aware rounding: keeps ACC's 5 decimals without spending 5 on
+    z500 RMSE in the hundreds. Non-finite -> None (NaN is not valid JSON)."""
+    if v is None or not np.isfinite(v):
+        return None
+    a = abs(v)
+    return round(v, 2) if a >= 100 else round(v, 3) if a >= 1 else round(v, 5)
+
+
 def _scoreboard_data(df: pd.DataFrame) -> dict:
-    """metrics.parquet -> the page's DATA shape: means across init times,
-    arrays aligned to `leads`, None where a (model, region, var, metric,
-    lead) has no rows."""
+    """metrics.parquet -> the page's DATA shape.
+
+    Values are stored PER INIT TIME, not pre-averaged, so the page can
+    re-average over any user-selected init window client-side:
+
+        data[model][region][var][metric][init_idx] = [value per lead]
+
+    `init_idx` indexes `init_times`; a null in place of the inner array means
+    that init has no rows for that series, and a null inside it means that
+    lead is unscored (real-time inits fill in as truth arrives).
+    """
     leads = sorted(int(x) for x in df.lead_hours.unique())
     lead_pos = {lh: i for i, lh in enumerate(leads)}
-    means = df.groupby(
-        ["model", "region", "variable", "metric", "lead_hours"]
-    ).value.mean()
+    inits = sorted(pd.Timestamp(t) for t in df.init_time.unique())
+    init_pos = {t: i for i, t in enumerate(inits)}
+    n_inits = len(inits)
+
     data: dict = {}
-    for (model, region, var, metric, lh), v in means.items():
-        arr = (data.setdefault(model, {}).setdefault(region, {})
-               .setdefault(var, {}).setdefault(metric, [None] * len(leads)))
-        arr[lead_pos[int(lh)]] = round(float(v), 5)
-    inits = sorted(df.init_time.unique())
+    for r in df.itertuples(index=False):
+        per_init = (data.setdefault(r.model, {}).setdefault(r.region, {})
+                    .setdefault(r.variable, {})
+                    .setdefault(r.metric, [None] * n_inits))
+        i = init_pos[r.init_time]
+        if per_init[i] is None:
+            per_init[i] = [None] * len(leads)
+        per_init[i][lead_pos[int(r.lead_hours)]] = _round(float(r.value))
     return {
         "leads": leads,
         "init_times": [f"{pd.Timestamp(t):%Y-%m-%d %H:%M:%S}" for t in inits],
