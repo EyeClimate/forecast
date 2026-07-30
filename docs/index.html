@@ -225,6 +225,8 @@ h1 {
 /* model on/off chips — same shell as .seg, but multi-select and
    color-keyed: identity stays on the swatch, never on the chip text */
 .mseg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+/* per-section model toggle rows (leaderboard / skill / precip) */
+.secmodels { display: flex; margin: 10px 0 14px; }
 .mseg button {
   appearance: none;
   display: inline-flex;
@@ -451,10 +453,6 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: s
       <div class="seg" role="group" aria-label="Metric" id="seg-metric"></div>
     </div>
     <div class="fgroup">
-      <span class="flabel">Models&nbsp;(charts)</span>
-      <div class="mseg" role="group" aria-label="Toggle models on charts" id="seg-models"></div>
-    </div>
-    <div class="fgroup">
       <span class="flabel">Init&nbsp;window</span>
       <div class="seg" role="group" aria-label="Init window preset" id="seg-window"></div>
       <input type="date" class="dateinput" id="w-start" aria-label="Window start date">
@@ -473,9 +471,10 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: s
       <span class="sub" id="lb-sub"></span>
       <div class="seg" role="group" aria-label="Lead time" id="seg-lead" style="margin-left:auto"></div>
     </div>
-    <p class="secnote">Ranked per variable at the selected lead time. Models whose scoring
-    run hasn’t reached this lead yet appear unranked. The leaderboard always ranks the
-    full roster — the model toggle above filters the charts only.</p>
+    <div class="mseg secmodels" role="group" aria-label="Toggle models on the leaderboard" id="lb-models"></div>
+    <p class="secnote">Ranked per variable at the selected lead time, over the models
+    toggled on above. Models whose scoring run hasn’t reached this lead yet appear
+    unranked.</p>
     <div class="lb-grid" id="lb-grid"></div>
   </section>
 
@@ -484,7 +483,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: s
       <h2>Skill vs lead time</h2>
       <span class="sub" id="sk-sub"></span>
     </div>
-    <div class="legend" id="sk-legend"></div>
+    <div class="mseg secmodels" role="group" aria-label="Toggle models on the skill charts" id="sk-models"></div>
     <div class="chart-grid" id="sk-grid"></div>
     <details class="tv">
       <summary>View as table</summary>
@@ -503,7 +502,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: s
     </div>
     <p class="secnote">Critical Success Index and Fractions Skill Score (~250 km neighborhood)
     at the selected rain-rate threshold, plus grid-point RMSE on 6-hour accumulations.</p>
-    <div class="legend" id="pr-legend"></div>
+    <div class="mseg secmodels" role="group" aria-label="Toggle models on the precipitation charts" id="pr-models"></div>
     <div class="chart-grid" id="pr-grid"></div>
     <details class="tv">
       <summary>View as table</summary>
@@ -634,9 +633,15 @@ const WINDOWS = (() => {
 })();
 
 const state = { region: "global", metric: "rmse", lbLead: 120, thr: "1mm",
-                active: new Set(DEFAULT_ACTIVE),
+                // independent per-section model toggles: the leaderboard
+                // defaults to the full roster, the chart sections to the
+                // readable DEFAULT_ACTIVE subset
+                activeLb: new Set(MODELS.map((m) => m.id)),
+                activeSk: new Set(DEFAULT_ACTIVE),
+                activePr: new Set(DEFAULT_ACTIVE),
                 r0: FIRST_INIT, r1: LAST_INIT };
-const activeModels = () => MODELS.filter((m) => state.active.has(m.id));
+const lbModels = () => MODELS.filter((m) => state.activeLb.has(m.id));
+const skModels = () => MODELS.filter((m) => state.activeSk.has(m.id));
 const windowLabel = () => {
   const preset = WINDOWS.find((w) => state.r0 === w.r[0] && state.r1 === w.r[1]);
   const n = WIN_IDX.length;
@@ -738,23 +743,23 @@ function segControl(el, options, get, set) {
     el.appendChild(b);
   });
 }
-function modelToggle(el) {
+function modelToggle(el, set, models) {
   el.textContent = "";
-  MODELS.forEach((m) => {
+  (models || MODELS).forEach((m) => {
     const b = document.createElement("button");
     b.type = "button";
     b.style.setProperty("--mc", `var(${m.cvar})`);
-    b.setAttribute("aria-pressed", String(state.active.has(m.id)));
+    b.setAttribute("aria-pressed", String(set.has(m.id)));
     const dot = document.createElement("span");
     dot.className = m.baseline ? "mdash" : "mdot";
     const n = document.createElement("span");
     n.textContent = m.short || m.name;
     b.append(dot, n);
     b.addEventListener("click", () => {
-      if (state.active.has(m.id)) {
-        if (state.active.size <= 1) return; // keep at least one series
-        state.active.delete(m.id);
-      } else state.active.add(m.id);
+      if (set.has(m.id)) {
+        if (set.size <= 1) return; // keep at least one series
+        set.delete(m.id);
+      } else set.add(m.id);
       update();
     });
     el.appendChild(b);
@@ -987,7 +992,7 @@ function renderLeaderboard() {
     const vu = document.createElement("span"); vu.className = "vu"; vu.textContent = va.unit;
     vh.append(vn, vu); card.appendChild(vh);
 
-    const rows = MODELS.map((m) => {
+    const rows = lbModels().map((m) => {
       const s = series(m.id, state.region, va.id, state.metric);
       return { m, v: s ? s[idx] : null };
     });
@@ -1029,28 +1034,17 @@ function renderLeaderboard() {
   });
 }
 
-/* ---------- skill small multiples ---------- */
-function buildLegend(el, models) {
-  el.textContent = "";
-  models.forEach((m) => {
-    const k = document.createElement("span"); k.className = "key";
-    const s = document.createElement("span"); s.className = "swatch-line"; s.style.borderTopColor = `var(${m.cvar})`;
-    if (m.baseline) s.style.borderTopStyle = "dashed";
-    const n = document.createElement("span"); n.textContent = m.name;
-    k.append(s, n);
-    if (m.baseline) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "baseline"; k.appendChild(t); }
-    el.appendChild(k);
-  });
-}
+/* ---------- skill small multiples ----------
+   The per-section model chips double as the legend (color dot / baseline
+   dash + name), so there is no separate legend row. */
 function renderSkill() {
   const met = METRICS.find((m) => m.id === state.metric);
   $("sk-sub").textContent = `${met.name} · ${REGIONS.find((r) => r.id === state.region).name} · ${met.better === "lower" ? "lower is better" : met.better === "higher" ? "higher is better" : "closer to zero is better"} · ${windowLabel()}`;
-  buildLegend($("sk-legend"), activeModels());
   const grid = $("sk-grid");
   grid.textContent = "";
   VARS.forEach((va) => {
     const card = document.createElement("div"); card.className = "card chart-card";
-    const entries = activeModels().map((m) => ({ modelDef: m, vals: series(m.id, state.region, va.id, state.metric) }));
+    const entries = skModels().map((m) => ({ modelDef: m, vals: series(m.id, state.region, va.id, state.metric) }));
     lineChart(card, {
       title: va.short, unit: state.metric === "acc" ? "correlation" : va.unit,
       entries,
@@ -1074,7 +1068,7 @@ function renderSkillTable() {
   });
   thead.appendChild(hr); tbl.appendChild(thead);
   const tb = document.createElement("tbody");
-  activeModels().forEach((m) => VARS.forEach((va) => {
+  skModels().forEach((m) => VARS.forEach((va) => {
     const s = series(m.id, state.region, va.id, state.metric);
     if (!s) return;
     const tr = document.createElement("tr");
@@ -1088,9 +1082,8 @@ function renderSkillTable() {
 }
 
 /* ---------- precipitation ---------- */
-const precipModels = () => activeModels().filter((m) => PRECIP_VAR[m.id]);
+const precipModels = () => MODELS.filter((m) => state.activePr.has(m.id) && PRECIP_VAR[m.id]);
 function renderPrecip() {
-  buildLegend($("pr-legend"), precipModels());
   const grid = $("pr-grid");
   grid.textContent = "";
   const charts = [
@@ -1134,7 +1127,9 @@ function renderPrecipTable() {
 function renderControls() {
   segControl($("seg-region"), REGIONS, () => state.region, (v) => { state.region = v; });
   segControl($("seg-metric"), METRICS, () => state.metric, (v) => { state.metric = v; });
-  modelToggle($("seg-models"));
+  modelToggle($("lb-models"), state.activeLb);
+  modelToggle($("sk-models"), state.activeSk);
+  modelToggle($("pr-models"), state.activePr, MODELS.filter((m) => PRECIP_VAR[m.id]));
   windowControl();
   segControl($("seg-lead"), [{ id: 24, name: "+24 h" }, { id: 72, name: "+72 h" }, { id: 120, name: "+120 h" }], () => state.lbLead, (v) => { state.lbLead = v; });
   segControl($("seg-thr"), THRESHOLDS, () => state.thr, (v) => { state.thr = v; });
