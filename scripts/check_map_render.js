@@ -121,7 +121,33 @@ function serve() {
     else ok(`overlay bounds match the manifest grid (N ${b.north}, S ${b.south})`);
     if (Math.abs((b.east - b.west) - 360) > 1e-6) fail(`overlay spans ${(b.east - b.west).toFixed(3)}deg, not 360`);
     else ok("overlay spans a full 360deg of longitude");
+    // The grid is numbered 0..360 east of Greenwich but Leaflet, the coastlines
+    // and maxBounds are all -180..180. An overlay left at 0..360 leaves the
+    // western hemisphere with no field beneath it.
+    if (Math.abs(b.west + 180) > 1e-6) fail(`overlay west is ${b.west}, not -180 — the western hemisphere would be blank`);
+    else ok("overlay is anchored at -180, aligned with the coastlines");
   }
+
+  // Opacity across longitude: every column of the rasterised overlay must carry
+  // data. A rolled-vs-unrolled mistake shows up as a fully transparent half.
+  const cover = await page.evaluate(() => {
+    const im = document.querySelector(".leaflet-image-layer");
+    if (!im) return null;
+    const c = document.createElement("canvas");
+    c.width = im.naturalWidth; c.height = im.naturalHeight;
+    c.getContext("2d").drawImage(im, 0, 0);
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    let empty = 0;
+    for (let x = 0; x < c.width; x++) {
+      let any = false;
+      for (let y = 0; y < c.height; y++) if (d[((y * c.width + x) * 4) + 3] !== 0) { any = true; break; }
+      if (!any) empty++;
+    }
+    return { empty, width: c.width };
+  });
+  if (!cover) fail("no overlay to measure coverage on");
+  else if (cover.empty) fail(`${cover.empty}/${cover.width} longitude columns are fully transparent`);
+  else ok(`all ${cover.width} longitude columns carry field data`);
 
   // --- 4. the pixels that were rasterised -----------------------------------
   // Row 0 of the canvas must correspond to lat_start. Compare the mean
@@ -158,6 +184,43 @@ function serve() {
     }
   }
 
+  // --- 4b. the drawn pixel at a place matches the value at that place -------
+  // Everything above still passes if the longitude roll goes the wrong way and
+  // Asia's field is painted over the Americas: the bounds are right, every
+  // column has data, and the poles are still cold. This is the assertion that
+  // ties geography to the pixel — for each point, the colour actually drawn is
+  // compared against the colormap applied to the value sampled from the
+  // undrawn array (whose lon arithmetic was verified against the zarr).
+  const align = await page.evaluate(() => {
+    const im = document.querySelector(".leaflet-image-layer");
+    if (!im) return null;
+    const c = document.createElement("canvas");
+    c.width = im.naturalWidth; c.height = im.naturalHeight;
+    c.getContext("2d").drawImage(im, 0, 0);
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    const pts = [[20, 10], [20, -160], [0, 100], [0, -60], [-30, 140], [50, -100], [60, 30]];
+    return pts.map(([lat, lon]) => {
+      const x = Math.round(((lon + 180) / 360) * c.width) % c.width;
+      const y = Math.round(((90 - lat) / 180) * (c.height - 1));
+      const p = (y * c.width + x) * 4;
+      const got = [d[p], d[p + 1], d[p + 2]];
+      const want = window.__S.colour(window.__sampleAt(lat, lon));
+      return { lat, lon, got, want,
+               dist: Math.max(...got.map((g, i) => Math.abs(g - want[i]))) };
+    });
+  });
+  if (!align) fail("no overlay to check alignment on");
+  else {
+    const bad = align.filter((a) => a.dist > 12);
+    align.forEach((a) => console.log(
+      `     ${String(a.lat).padStart(3)},${String(a.lon).padStart(5)}  drawn ${a.got.join(",")}  ` +
+      `expected ${a.want.join(",")}  d=${a.dist}`));
+    if (bad.length) bad.forEach((a) => fail(
+      `field is drawn at the wrong longitude: at ${a.lat},${a.lon} the pixel is ` +
+      `[${a.got}] but the value there implies [${a.want}]`));
+    else ok(`drawn pixels match the sampled values at all ${align.length} probe points`);
+  }
+
   // --- 5. error view renders and is symmetric -------------------------------
   await page.evaluate(() => {
     document.querySelector('#viewtabs button[data-kind="error"]').click();
@@ -191,6 +254,33 @@ function serve() {
   if (Math.abs(sync.a[0] - sync.b[0]) > 0.5 || Math.abs(sync.a[1] - sync.b[1]) > 0.5 || sync.za !== sync.zb)
     fail(`panes not linked: ${JSON.stringify(sync)}`);
   else ok(`side-by-side panes stay locked (both at ${sync.a[0].toFixed(1)}, ${sync.a[1].toFixed(1)} z${sync.za})`);
+
+  // --- 6b. the field must fill the viewport, in every layout ---------------
+  // A "fit" zoom letterboxes a 2:1 world into a non-2:1 window, and panning
+  // past +-180 leaves coastlines drawn over blank page — which reads as a
+  // monochrome repeat of the map. Assert the view never extends beyond the
+  // world, at minimum zoom, in both layouts.
+  for (const panes of ["1", "2"]) {
+    await page.evaluate((p) => document.querySelector(`#paneltabs button[data-panes="${p}"]`).click(), panes);
+    await new Promise((r) => setTimeout(r, 700));
+    const v = await page.evaluate(() => {
+      const m = window.__S.maps.map1;
+      m.setZoom(m.getMinZoom());
+      const b = m.getBounds();
+      return { n: b.getNorth(), s: b.getSouth(), w: b.getWest(), e: b.getEast(),
+               z: m.getZoom(), min: m.getMinZoom() };
+    });
+    const eps = 1e-6;
+    const out = [];
+    if (v.n > 90 + eps) out.push(`north ${v.n.toFixed(2)} > 90`);
+    if (v.s < -90 - eps) out.push(`south ${v.s.toFixed(2)} < -90`);
+    if (v.w < -180 - eps) out.push(`west ${v.w.toFixed(2)} < -180`);
+    if (v.e > 180 + eps) out.push(`east ${v.e.toFixed(2)} > 180`);
+    if (out.length) fail(`${panes}-pane at min zoom shows blank beyond the world: ${out.join(", ")}`);
+    else ok(`${panes}-pane: field covers the viewport at min zoom (z${v.min})`);
+  }
+  await page.evaluate(() => document.querySelector('#paneltabs button[data-panes="2"]').click());
+  await new Promise((r) => setTimeout(r, 700));
 
   // --- 7. floating chrome must not cover the pane labels -------------------
   // On a full-bleed map everything is absolutely positioned, so nothing throws

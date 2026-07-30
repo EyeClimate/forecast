@@ -50,8 +50,11 @@ async function boot() {
 
   // The map fills the viewport, so a resize changes its size rather than the
   // page's scroll height — Leaflet has to be told.
+  // A resize changes what "cover" means, so the minimum zoom has to be
+  // recomputed — otherwise widening the window reveals blank page beside the
+  // field at a zoom that used to fill it.
   window.addEventListener("resize", () => {
-    Object.values(S.maps).forEach((m) => m.invalidateSize());
+    Object.values(S.maps).forEach((m) => { m.invalidateSize(); coverWorld(m, true); });
   });
 
   // Narrow screens: the control panel covers too much of the map to stay open.
@@ -132,7 +135,10 @@ function buildPanelTabs() {
       $("maprow").classList.toggle("two", S.panes === 2);
       $("panel2").hidden = S.panes === 1;
       $("model2wrap").hidden = S.panes === 1;
-      Object.values(S.maps).forEach((m) => setTimeout(() => m.invalidateSize(), 0));
+      // Halving a pane's width changes what zoom counts as covering it.
+      Object.values(S.maps).forEach((m) => setTimeout(() => {
+        m.invalidateSize(); coverWorld(m, true);
+      }, 0));
       await render();
     };
   });
@@ -142,17 +148,39 @@ function buildPanelTabs() {
 
 S.maps = {}; S.layers = {}; S.syncing = false;
 
+const WORLD = L.latLngBounds([[-90, -180], [90, 180]]);
+
+/* Fill the viewport rather than fit inside it.
+ *
+ * fitWorld() and fitBounds() pick the zoom where the world fits *within* the
+ * view, which letterboxes: the world is 2:1 and a browser window is not, so one
+ * axis gets bands of empty page either side of the field. Worse, panning then
+ * runs off the overlay entirely and you see coastlines drawn over blank
+ * background — a monochrome strip that looks like a repeat of the map.
+ *
+ * getBoundsZoom(bounds, true) is the opposite operation: the minimum zoom at
+ * which the *view* fits inside the bounds. That is `background-size: cover`.
+ * Combined with maxBounds it makes it impossible to see anything that is not
+ * field. */
+function coverWorld(m, keepCenter = false) {
+  const z = m.getBoundsZoom(WORLD, true);
+  const center = keepCenter && m._loaded ? m.getCenter() : L.latLng(0, 0);
+  m.setMinZoom(z);
+  if (!m._loaded || m.getZoom() < z) m.setView(center, z, { animate: false });
+  else m.setView(center, m.getZoom(), { animate: false });
+}
+
 function makeMap(id) {
   const m = L.map(id, {
     crs: L.CRS.EPSG4326,
-    minZoom: 0, maxZoom: 6,
+    maxZoom: 6,
     zoomControl: false,          // the floating panel is the chrome; see below
     attributionControl: false,
     worldCopyJump: false,
+    maxBounds: WORLD,            // no panning into the void past +-180
+    maxBoundsViscosity: 1.0,     // hard edge, not a rubber band
   });
-  // Full-bleed: start showing the whole world rather than an arbitrary zoom, so
-  // the first paint is the globe and not a random ocean.
-  m.fitWorld();
+  coverWorld(m);
   if (id === "map1") L.control.zoom({ position: "bottomright" }).addTo(m);
   S.maps[id] = m;
 
@@ -178,24 +206,34 @@ function makeMap(id) {
  * is written at native grid resolution, one pixel per cell, and Leaflet scales
  * it — so switching lead is a redraw of a cached array, not a refetch. */
 function drawField(mapId, field, colour) {
+  const g = S.grid;
   const c = document.createElement("canvas");
   c.width = field.w; c.height = field.h;
   const ctx = c.getContext("2d");
   const img = ctx.createImageData(field.w, field.h);
-  for (let i = 0, p = 0; i < field.data.length; i++, p += 4) {
-    const v = field.data[i];
-    if (Number.isNaN(v)) { img.data[p + 3] = 0; continue; }   // missing -> transparent
-    const rgb = colour(v);
-    img.data[p] = rgb[0]; img.data[p + 1] = rgb[1]; img.data[p + 2] = rgb[2];
-    img.data[p + 3] = 235;
+
+  // The grid runs 0..360 east from Greenwich; Leaflet, the coastlines and
+  // maxBounds all run -180..180. Drawing the array as-is puts the overlay at
+  // 0..360, so everything west of the prime meridian has no field beneath it —
+  // a blank half with coastlines floating on it. Roll each row so column 0
+  // lands on -180 instead of renumbering the world.
+  const shift = Math.round(((180 - g.lon_start) / g.lon_step)) % field.w;
+  for (let y = 0; y < field.h; y++) {
+    for (let x = 0; x < field.w; x++) {
+      const src = (x + shift) % field.w;
+      const v = field.data[y * field.w + src];
+      const p = (y * field.w + x) * 4;
+      if (Number.isNaN(v)) { img.data[p + 3] = 0; continue; }   // missing -> transparent
+      const rgb = colour(v);
+      img.data[p] = rgb[0]; img.data[p + 1] = rgb[1]; img.data[p + 2] = rgb[2];
+      img.data[p + 3] = 235;
+    }
   }
   ctx.putImageData(img, 0, 0);
 
-  const g = S.grid;
   const north = g.lat_start;
   const south = g.lat_start + g.lat_step * (g.height - 1);
-  const west = g.lon_start > 180 ? g.lon_start - 360 : g.lon_start;
-  const bounds = [[south, west], [north, west + 360]];
+  const bounds = [[south, -180], [north, 180]];
 
   const map = S.maps[mapId];
   if (S.layers[mapId]) map.removeLayer(S.layers[mapId]);
@@ -259,6 +297,7 @@ async function draw() {
   }
 
   const colour = scaleFor(kind, scale[0], scale[1]);
+  S.colour = colour;          // test hook: check_map_render.js re-derives pixels
   const targets = S.panes === 2 ? [["map1", S.model], ["map2", S.model2]] : [["map1", S.model]];
 
   for (const [mapId, model] of targets) {
