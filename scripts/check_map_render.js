@@ -798,6 +798,87 @@ function serve() {
     await new Promise((r) => setTimeout(r, 500));
   }
 
+  // --- 12. the control panel ------------------------------------------------
+  // Ten equally-weighted controls made this 725px tall — 81% of a 1440x900
+  // window and already scrolling on a 1280x800 laptop. The two-tier split is
+  // only worth anything if it stays split, so the height is asserted rather
+  // than admired.
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.goto(`http://localhost:${PORT}/map.html`, { waitUntil: "networkidle0" });
+  await page.evaluate(() => window.__mapReady);
+  await new Promise((r) => setTimeout(r, 500));
+
+  const panel = await page.evaluate(() => {
+    const p = document.getElementById("ctlpanel");
+    const r = p.getBoundingClientRect();
+    return { h: Math.round(r.height), pct: Math.round((r.height / innerHeight) * 100),
+             scrolls: p.scrollHeight > p.clientHeight + 1,
+             folds: [...document.querySelectorAll(".fold")].map((f) => ({ id: f.id, open: f.open })),
+             summary: (document.getElementById("dispsum") || {}).textContent,
+             varShown: !document.getElementById("varwrap").hidden,
+             varCount: Object.keys(window.__S.f.variables).length };
+  });
+  if (panel.pct > 55) fail(`the control panel is ${panel.h}px, ${panel.pct}% of a 1280x800 viewport`);
+  else if (panel.scrolls) fail(`the control panel scrolls at 1280x800 (${panel.h}px)`);
+  else ok(`control panel is ${panel.h}px, ${panel.pct}% of a laptop viewport, no scroll`);
+  if (panel.folds.some((f) => f.open))
+    fail(`second-tier sections start expanded: ${panel.folds.filter((f) => f.open).map((f) => f.id)}`);
+  else ok(`both second-tier sections start collapsed (${panel.folds.map((f) => f.id).join(", ")})`);
+  // A disclosure that hides live state has to report it, or the reader cannot
+  // tell °C from °F without opening it.
+  if (!panel.summary || !panel.summary.trim())
+    fail("the collapsed Display section reports none of the state it is hiding");
+  else ok(`collapsed Display reports its state ("${panel.summary}")`);
+  if (panel.varCount < 2 && panel.varShown)
+    fail("the Variable group is shown with a single variable exported — a tab group offering no choice");
+  else ok(`Variable group shown only when there is a choice (${panel.varCount} exported)`);
+
+  // Every control must still be reachable, collapsed or not — querySelector
+  // finds them inside a closed <details>, but only if they still exist.
+  const missing = await page.evaluate(() => ["modelsel", "initsel", "vartabs", "viewtabs",
+    "basetabs", "scaletabs", "unittabs", "paneltabs", "opac", "prov"]
+    .filter((id) => !document.getElementById(id)));
+  if (missing.length) fail(`controls lost in the panel restructure: ${missing.join(", ")}`);
+  else ok("every control survived the restructure");
+
+  // The reported bug: narrowing an already-open window left a full-width slab
+  // over the map whose dismiss button had been pushed off the edge of the nav.
+  for (const w of [820, 600, 380]) {
+    await page.setViewport({ width: w, height: 820 });
+    await new Promise((r) => setTimeout(r, 500));
+    const narrow = await page.evaluate(() => {
+      const p = document.getElementById("ctlpanel");
+      const nav = document.querySelector(".topbar").getBoundingClientRect();
+      const btn = document.getElementById("panelbtn").getBoundingClientRect();
+      return { hidden: p.hidden, navFits: nav.right <= innerWidth,
+               btnReachable: btn.width > 0 && btn.right <= innerWidth };
+    });
+    if (!narrow.hidden) fail(`${w}px: narrowing the window left the panel open over the map`);
+    else if (!narrow.navFits) fail(`${w}px: the nav runs off the right edge of the viewport`);
+    else if (!narrow.btnReachable) fail(`${w}px: the Layers button is off screen — the panel cannot be dismissed`);
+    else ok(`${w}px: panel steps aside, nav and its toggle stay on screen`);
+  }
+
+  // ...and opening it there gives a drawer bounded by the chrome around it,
+  // not a slab clipped at 46% of the viewport through the middle of a control.
+  const drawer = await page.evaluate(async () => {
+    document.getElementById("panelbtn").click();
+    await new Promise((r) => setTimeout(r, 400));
+    const p = document.getElementById("ctlpanel"), r = p.getBoundingClientRect();
+    const nav = document.querySelector(".topbar").getBoundingClientRect();
+    const bar = document.querySelector(".bottombar").getBoundingClientRect();
+    return { shown: !p.hidden, belowNav: r.top >= nav.bottom - 1,
+             aboveBar: r.bottom <= bar.top + 1, onScreen: r.bottom <= innerHeight,
+             clipped: p.scrollHeight > p.clientHeight + 1, h: Math.round(r.height) };
+  });
+  if (!drawer.shown) fail("380px: the Layers button did not open the panel");
+  else if (!drawer.belowNav) fail("380px: the open drawer overlaps the nav");
+  else if (!drawer.aboveBar || !drawer.onScreen) fail("380px: the open drawer runs under the bottom bar");
+  else if (drawer.clipped) fail(`380px: the drawer is clipped (${drawer.h}px shown, content is taller)`);
+  else ok(`380px: drawer opens clear of the nav and bottom bar, unclipped (${drawer.h}px)`);
+  await page.setViewport({ width: 1280, height: 1000 });
+  await new Promise((r) => setTimeout(r, 400));
+
   await page.screenshot({ path: SHOT, fullPage: false });
   console.log(`     screenshot -> ${SHOT}`);
   if (warnings.length) console.log(`     (${warnings.length} console warning(s))`);

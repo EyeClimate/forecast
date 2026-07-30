@@ -82,16 +82,16 @@ async function boot() {
     Object.values(S.maps).forEach((m) => { m.invalidateSize(); coverWorld(m, true); });
   });
 
-  trackBarHeight();
+  trackChromeHeights();
+  initFolds();
 
-  // Narrow screens: the control panel covers too much of the map to stay open.
   const btn = $("panelbtn");
   if (btn) btn.onclick = () => {
     const p = $("ctlpanel");
     p.hidden = !p.hidden;
     setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
   };
-  if (window.matchMedia("(max-width: 820px)").matches) $("ctlpanel").hidden = true;
+  trackPanelBreakpoint();
 
   await render();
 }
@@ -154,6 +154,9 @@ function buildModelSelects() {
 
 function buildVarTabs() {
   const box = $("vartabs"); box.innerHTML = "";
+  // Hidden while the export carries a single variable: a labelled tab group
+  // with one button offers no choice and still costs a row.
+  $("varwrap").hidden = Object.keys(S.f.variables).length < 2;
   Object.keys(S.f.variables).forEach((v) => {
     const b = el("button", S.variable === v ? "on" : null, SHORT[v] || v.toUpperCase());
     b.title = (S.manifest.variables[v] || {}).label || v;
@@ -178,6 +181,7 @@ function buildScaleTabs() {
     b.classList.toggle("on", (b.dataset.scale === "stretch") === S.stretch);
     b.onclick = async () => {
       S.stretch = b.dataset.scale === "stretch";
+      updateDisplaySummary();
       box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
       await draw();
     };
@@ -191,6 +195,7 @@ function buildUnitTabs() {
     b.onclick = async () => {
       S.units = b.dataset.units;
       saveSystem(S.units);
+      updateDisplaySummary();
       box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
       // Only labels change — the field arrays and the colour mapping are in
       // stored units, so nothing needs refetching or recolouring.
@@ -199,25 +204,82 @@ function buildUnitTabs() {
   });
 }
 
-/* Publish the bottom bar's measured height as `--barh`, for the pane labels to
- * sit above.
+/* Publish the floating bars' measured heights as `--barh` and `--navh`, for the
+ * chrome that has to sit clear of them.
  *
- * The bar is a wrapping flex row, so its height is a function of viewport width
+ * Both are wrapping flex rows, so their heights are functions of viewport width
  * and of content that appears at runtime — the hover readout, the colourbar's
- * unit. Below ~520px it takes three rows and reaches 130px, well past the fixed
- * 92px offset the labels used to use, and a pane label that lands under it does
- * not error or clip: it simply vanishes.
+ * unit, the nav wrapping to two rows on a phone. The bottom bar reaches 130px
+ * below ~520px, well past the fixed 92px offset the pane labels used to use, and
+ * chrome that lands underneath does not error or clip: it simply vanishes.
  *
  * A ResizeObserver rather than a resize listener, because the reflows that
  * matter are not all window resizes. */
-function trackBarHeight() {
-  const bar = document.querySelector(".bottombar");
-  if (!bar) return;
-  const set = () => document.documentElement.style.setProperty(
-    "--barh", `${Math.round(bar.getBoundingClientRect().height)}px`);
-  set();
-  if (window.ResizeObserver) new ResizeObserver(set).observe(bar);
-  else window.addEventListener("resize", set);     // still better than a constant
+function trackChromeHeights() {
+  for (const [sel, prop] of [[".bottombar", "--barh"], [".topbar", "--navh"]]) {
+    const box = document.querySelector(sel);
+    if (!box) continue;
+    const set = () => document.documentElement.style.setProperty(
+      prop, `${Math.round(box.getBoundingClientRect().height)}px`);
+    set();
+    if (window.ResizeObserver) new ResizeObserver(set).observe(box);
+    else window.addEventListener("resize", set);   // still better than a constant
+  }
+}
+
+/* Remember which second-tier sections the reader left open.
+ *
+ * Both default to closed: the panel's whole purpose is to stop presenting ten
+ * equally-weighted controls at once, and restoring it to fully expanded on
+ * every visit would undo that on the second page load. */
+const FOLD_KEY = "scoreboard.panelfolds";
+
+function initFolds() {
+  let open = {};
+  try { open = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}"); } catch { /* ignore */ }
+  const folds = [...document.querySelectorAll(".fold")];
+  folds.forEach((f) => { f.open = !!open[f.id]; });
+  const save = () => {
+    const state = {};
+    folds.forEach((f) => { state[f.id] = f.open; });
+    try { localStorage.setItem(FOLD_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+  };
+  folds.forEach((f) => f.addEventListener("toggle", save));
+}
+
+/* What the collapsed Display section is currently hiding.
+ *
+ * A disclosure that hides live state is worse than no disclosure: the reader
+ * cannot tell whether they are looking at °C or °F without opening it. Only the
+ * settings that are *not* at their default are listed, so the common case stays
+ * short and anything unusual announces itself. */
+function updateDisplaySummary() {
+  const out = $("dispsum");
+  if (!out || !S.manifest) return;
+  const bits = [unitFor((S.manifest.variables[S.variable] || {}).units, S.units).label];
+  if (S.stretch) bits.push("stretched");
+  const base = basemapDef(S.basemapId);
+  if (base) bits.push(base.label.toLowerCase());
+  if (S.panes === 2) bits.push("2 panes");
+  out.textContent = bits.join(" · ");
+}
+
+/* Narrow screens: the panel covers too much of the map to stay open.
+ *
+ * The decision used to be made once, at boot, from a matchMedia *check* — so
+ * narrowing an already-open window left a full-width slab sitting over the map
+ * with its dismiss button pushed off the edge of the nav. It is a matchMedia
+ * *subscription* now, so crossing the breakpoint in either direction is handled
+ * however the window got there. */
+function trackPanelBreakpoint() {
+  const panel = $("ctlpanel");
+  const mq = window.matchMedia("(max-width: 820px)");
+  const sync = () => {
+    panel.hidden = mq.matches;
+    setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
+  };
+  mq.addEventListener("change", sync);
+  if (mq.matches) panel.hidden = true;
 }
 
 /* ---------- basemap ----------
@@ -342,6 +404,7 @@ function applyBasemap() {
   }
   syncAttribution(def);
   syncBasemapTabs();
+  updateDisplaySummary();
   applyFieldOpacity();
   renderBaseNote();
 }
@@ -409,6 +472,7 @@ function buildPanelTabs() {
   $("paneltabs").querySelectorAll("button").forEach((b) => {
     b.onclick = async () => {
       S.panes = Number(b.dataset.panes);
+      updateDisplaySummary();
       $("paneltabs").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
       $("maprow").classList.toggle("two", S.panes === 2);
       $("panel2").hidden = S.panes === 1;

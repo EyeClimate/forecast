@@ -312,6 +312,39 @@ so offset units must convert as a delta** — a 2 K error is a 2 °C error, not
 caller must say which it wants. `npm run check:units` covers that specifically,
 including sign preservation and zero-stays-zero across every unit and system.
 
+**The control panel is two tiers, and the split is by how often a control is
+touched rather than by what it does.** Model, View and init time are the question
+being asked and change constantly, so they are always visible. Basemap, colour
+scale, units, layout and field opacity are preferences set once and left, so they
+fold into a collapsed `Display` disclosure; provenance folds into a second one.
+Flattening the two into one list is what made the panel 725 px tall — 81% of a
+1440×900 window and already scrolling on a 1280×800 laptop. Split, it is 348 px
+and scrolls nowhere.
+
+Two rules keep the fold honest. A collapsed section **reports the state it is
+hiding** on its own summary (`°F · stretched · streets · 2 panes`), listing only
+what is away from its default — otherwise the panel could not answer "am I in °C
+or °F" without being opened. And a control group with nothing to choose between
+**hides itself**: the Variable tabs stay hidden while the export carries one
+variable, rather than showing a tab group with a single button.
+
+`<details>` rather than a scripted accordion, because open/closed is state the
+browser already owns, it is keyboard- and screen-reader-correct for free, and
+`querySelector` still finds the controls inside a closed one — which is what lets
+the render gate drive them without opening it. Which sections are open persists
+in `localStorage`; both default to closed.
+
+**Narrow windows.** Below 820 px the panel becomes a drawer bounded by the nav
+above and the bottom bar below, opened from the nav's `Layers` button. Three
+things had to be true for that to work, and each had been false: the breakpoint
+is a `matchMedia` **subscription**, not a check made once at boot (narrowing an
+open window used to leave a full-width slab over the map); the nav wraps and
+drops its brand below 520 px, so it cannot run off the edge taking the dismiss
+button with it (which made the panel impossible to close on a phone); and the
+drawer is bounded by `--navh`/`--barh` rather than capped at 46% of the viewport,
+which used to clip it through the middle of a control. `check:map` asserts all
+three at 820, 600 and 380 px.
+
 **Colour scale modes.** Global (default) uses the scale `manifest.json`
 publishes, which is comparable across leads, models and panes. *Stretch to view*
 recomputes from the 2nd–98th percentile of the data inside the viewport on every
