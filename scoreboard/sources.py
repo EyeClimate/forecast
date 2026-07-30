@@ -132,14 +132,39 @@ class GFSInit:
       accumulated over (t-6h, t], the same window the historic branch sums
       from hourly ERA5 tp. (Model-background precip, not analysis, but it is
       only a model input here, never verification truth.)
-    Variables with neither a lexicon entry nor a synthesis (Atlas's sst,
-    AIFS's tcw/swvl/stl soil fields) raise immediately — GFS would otherwise
-    return them silently NaN-filled.
+    Variables with neither a lexicon entry nor a synthesis (Atlas's sst)
+    raise immediately — GFS would otherwise return them silently NaN-filled.
+
+    EXTRA_VOCAB registers AIFS inputs e2s's GFS lexicon doesn't map but GFS
+    serves cleanly (validated vs ERA5, 2023-01-15 and 2023-07-01):
+    - skt from surface TMP (corr 0.99), tcw from PWAT (corr 0.996; vapor
+      only, ~1-2 % low vs ERA5's vapor+condensate);
+    - stl1/stl2 from TSOIL (land corr 0.98) — NaN over ocean, filled with
+      skt below (ERA5 defines soil temp ocean-wide at ~SST).
+    swvl1/swvl2 are NOT mappable: GFS SOILW is a different quantity (total
+    moisture incl. ice, different land model; corr 0.1-0.2 vs ERA5 in both
+    seasons). They are served from ERA5 (ARCO) one year earlier (t-364 d,
+    same hour): seasonally correct, in-distribution, and inside ARCO's
+    ~3-month publication lag — the price is losing the current year's soil
+    moisture anomaly, acceptable for tier=provisional inits.
     """
+
+    EXTRA_VOCAB = {
+        "skt": "TMP::surface",
+        "tcw": "PWAT::entire atmosphere (considered as a single layer)",
+        "stl1": "TSOIL::0-0.1 m below ground",
+        "stl2": "TSOIL::0.1-0.4 m below ground",
+    }
+    STL_VARS = ("stl1", "stl2")
+    SWVL_VARS = ("swvl1", "swvl2")
+    SWVL_LAG = timedelta(days=364)
 
     def __init__(self):
         from earth2studio.data import GFS, GFS_FX
+        from earth2studio.lexicon import GFSLexicon
 
+        for k, v in self.EXTRA_VOCAB.items():
+            GFSLexicon.VOCAB.setdefault(k, v)
         self.gfs = GFS()
         self.gfs_fx = GFS_FX()
 
@@ -156,8 +181,15 @@ class GFSInit:
             if isinstance(variable, (list, tuple, np.ndarray))
             else [variable]
         )
+        # tp and tp06 both mean "6 h accumulation ending at t" in this pipeline
+        # (Atlas/persistence call it tp, FuXi/GraphCast tp06). GFS analysis
+        # files (f000) carry no accumulated precip — the lexicon's APCP entry
+        # would come back silently NaN — so both are synthesized below.
+        synth = [v for v in variables if v in ("tp", "tp06")]
+        swvl = [v for v in variables if v in self.SWVL_VARS]
         unsupported = [
-            v for v in variables if v != "tp06" and v not in GFSLexicon.VOCAB
+            v for v in variables
+            if v not in synth and v not in swvl and v not in GFSLexicon.VOCAB
         ]
         if unsupported:
             raise ValueError(
@@ -165,17 +197,33 @@ class GFSInit:
                 "real-time synthesis — this model cannot initialize from GFS yet."
             )
 
-        other = [v for v in variables if v != "tp06"]
+        other = [v for v in variables if v not in synth and v not in swvl]
+        stl = [v for v in other if v in self.STL_VARS]
+        # skt rides along when stl needs its ocean fill
+        gfs_req = other + ["skt"] if stl and "skt" not in other else other
         pieces = []
-        if other:
-            pieces.append(self.gfs(times, other))
-        if "tp06" in variables:
+        if gfs_req:
+            da = self.gfs(times, gfs_req)
+            skt = da.sel(variable="skt") if stl else None
+            for v in stl:
+                sv = da.sel(variable=v)
+                da.loc[dict(variable=v)] = sv.where(np.isfinite(sv), skt)
+            pieces.append(da.sel(variable=other))
+        if synth:
             cycles = [t - timedelta(hours=6) for t in times]
             fx = self.gfs_fx(cycles, [timedelta(hours=6)], ["tp"])
-            tp06 = fx.isel(lead_time=0, drop=True).assign_coords(
-                time=times, variable=["tp06"]
-            )
-            pieces.append(tp06)
+            base = fx.isel(lead_time=0, drop=True).assign_coords(time=times)
+            for name in synth:
+                pieces.append(base.assign_coords(variable=[name]))
+        if swvl:
+            lagged = [t - self.SWVL_LAG for t in times]
+            sda = ARCOInit()(lagged, swvl).assign_coords(time=times)
+            if pieces:
+                sda = sda.reindex(
+                    lat=pieces[0].lat.values, lon=pieces[0].lon.values,
+                    method="nearest",
+                )
+            pieces.append(sda)
         out = xr.concat(pieces, dim="variable") if len(pieces) > 1 else pieces[0]
         return out.sel(variable=variables)
 

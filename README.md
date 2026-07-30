@@ -30,9 +30,11 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
 
 1. **Resolve data sources** (`scoreboard/sources.py`). The pipeline never
    hard-codes a source — it asks this module, which picks a regime from the
-   init time's age. Inits older than `historic_cutoff_days` (6) use the
-   historic regime: **ERA5 via ARCO** (Google's zarr mirror, 1940→recent, no
-   CDS credentials) for both initial conditions and truth. The `ARCOInit`
+   init time's age. Inits older than `historic_cutoff_days` (120 — ARCO's
+   ERA5 publication lag is ~3 months, not the ~6 days originally assumed;
+   e2s currently rejects ARCO requests past 2026-04-30) use the historic
+   regime: **ERA5 via ARCO** (Google's zarr mirror, 1940→recent, no CDS
+   credentials) for both initial conditions and truth. The `ARCOInit`
    wrapper also synthesizes two variables ARCO lacks:
    - `r{level}` (relative humidity, a FuXi input) from `q`/`t` via the Magnus
      saturation formula;
@@ -40,13 +42,21 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
      summing the six hourly ERA5 `tp` accumulations ending at each time.
 
    Younger inits are the real-time regime: **GFS analysis** via `GFSInit`
-   (`init_source='gfs'`). GFS maps `r{level}` natively, so only `tp06` is
-   synthesized — GFS analysis files (f000) carry no accumulated precip, so
-   the 6 h accumulation ending at t is taken from the previous cycle's own
-   short forecast (`GFS_FX` init t−6h at lead +6 h, i.e. APCP over (t−6h, t]).
-   Variables GFS can neither serve nor synthesize (Atlas's `sst`, AIFS's
-   `tcw`/soil fields) raise up front, so those models can't yet run in this
-   regime. Real-time **truth** is GFS analysis at each valid time
+   (`init_source='gfs'`). GFS maps `r{level}` natively; what it can't serve
+   is synthesized:
+   - `tp`/`tp06` (6 h precip accumulation ending at t): GFS analysis files
+     (f000) carry no accumulated precip, so it comes from the previous
+     cycle's own short forecast (`GFS_FX` init t−6h at lead +6 h, i.e. APCP
+     over (t−6h, t]). Model input only — never verification truth.
+   - AIFS extras: `skt` ← surface TMP and `tcw` ← PWAT (both corr ≥0.99 vs
+     ERA5); `stl1/stl2` ← TSOIL (land corr 0.98, ocean NaNs filled with
+     `skt`); `swvl1/swvl2` are *not* mappable (GFS SOILW is a different
+     quantity — total moisture incl. ice; corr 0.1–0.2) and are served from
+     ERA5 one year earlier (t−364 d, same hour) — seasonally correct and
+     inside ARCO's publication lag, at the cost of the current year's soil
+     moisture anomaly.
+   Variables GFS can neither serve nor synthesize (Atlas's `sst`) raise up
+   front, so Atlas can't yet run in this regime. Real-time **truth** is GFS analysis at each valid time
    (`truth_source='gfs_analysis'`, `tier=provisional`; a later ERA5 re-score
    upgrades to final). Verification is *incremental*: each run scores only
    the leads whose valid time has truth (GFS analysis lands ~4 h after cycle
@@ -119,6 +129,23 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
      24/72/120 h, RMSE and ACC lead-time curves, precip CSI/FSS panels, and
      a forecast-vs-truth precip map for the latest scored init. Regenerated
      each run and gitignored along with `docs/assets/`.
+
+## Daily automation
+
+`scoreboard/daily.sh` runs from cron (installed for user `bowen`, 04:30
+local, logging to `data/logs/daily.log`):
+
+```
+30 4 * * * .../scoreboard/daily.sh >> .../data/logs/daily.log 2>&1
+```
+
+Each run forecasts yesterday's 00z init for every real-time-capable model
+(all but atlas) and re-runs the trailing 8 days — verification is
+incremental, so this scores exactly the leads whose GFS-analysis truth
+arrived since the last run; a 5-day forecast completes over ~6 daily runs.
+It then sweeps old zarrs and, if `docs/index.html` changed, commits and
+pushes it so GitHub Pages serves fresh scores. The separate published copy of
+the page is not updated by cron — republish it manually when desired.
 
 ## Retention
 

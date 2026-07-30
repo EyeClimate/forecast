@@ -53,9 +53,12 @@ verification:
 # (by mtime) and whose scores are already in metrics.parquet.
 retention_days: 30
 
-# Init times older than this are the "historic" regime (ERA5 init + truth).
-# Younger inits are "real-time" (GFS/IMERG) — not implemented until Phase 2.
-historic_cutoff_days: 6
+# Init times older than this are the "historic" regime (ERA5 init + truth);
+# younger inits are "real-time" (GFS init, GFS-analysis truth, provisional).
+# The boundary encodes ERA5 availability in ARCO, whose publication lag is
+# ~3 months (e2s currently caps requests at 2026-04-30) — NOT the ~6 days
+# originally assumed. Lower this only after checking ARCO's actual lag.
+historic_cutoff_days: 120
 
 paths:
   data: data
