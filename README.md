@@ -312,6 +312,33 @@ so offset units must convert as a delta** — a 2 K error is a 2 °C error, not
 caller must say which it wants. `npm run check:units` covers that specifically,
 including sign preservation and zero-stays-zero across every unit and system.
 
+**The floating chrome is glass, and its opacity is a measured number rather than
+a taste.** Every panel, bar, popup, note and the zoom control share one material:
+a 24 px backdrop blur, `saturate(150%)`, a bright inset rim along the top edge
+for the specular highlight that gives the slab thickness, and a top-down sheen
+fading by 45% so the light has a direction.
+
+The tuning is where a map like this differs from a photograph. These panels float
+over a temperature ramp that spans violet to dark red, so their effective
+background is not a colour anyone picked — it is whatever the field happens to be
+behind them. At the 58% fill that looks best over a photo, the panel's
+micro-labels measured **1.9:1** in dark mode and the nav links **3.4:1**. Three
+things brought it back: the fill went to 78%, `saturate()` came down from 180%
+(it boosts the field's chroma *before* compositing, and the text has to survive
+what comes out), and `--muted` is overridden *within glass containers only* — the
+site token is correct on the solid surfaces of `index.html` and `compare.html`
+and is left alone there. Colourbar ticks moved from `--muted` to `--ink-2` while
+this was being measured: they are the values the whole field is read against and
+were the faintest text on the page.
+
+`check:map` section 13 measures it the way it has to be measured — screenshot the
+composited page, take the modal colour inside each panel as its effective
+background, and compute WCAG contrast against the tokens as resolved *inside* the
+glass. Both themes, three viewports over the hot end of the ramp, floor of 4.5:1
+for every token. Currently worst is 4.8:1. Thinning the glass fails the gate.
+`prefers-reduced-transparency` and `prefers-contrast: more` drop the whole
+material to an opaque panel and switch the blur off.
+
 **The control panel is two tiers, and the split is by how often a control is
 touched rather than by what it does.** Model, View and init time are the question
 being asked and change constantly, so they are always visible. Basemap, colour

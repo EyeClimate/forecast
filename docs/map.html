@@ -100,13 +100,15 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 
 /* ---------- popups ---------- */
 .mappop .leaflet-popup-content-wrapper {
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
-  color: var(--ink); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: var(--shadow); backdrop-filter: blur(10px);
+  background-color: var(--glass-bg); background-image: var(--glass-sheen);
+  color: var(--ink); border: 1px solid var(--glass-edge); border-radius: 14px;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-rim);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
+/* The tip is a rotated square, so a backdrop-filter on it would blur along the
+   rotated axes and shear the field behind the beak. Left as flat fill. */
 .mappop .leaflet-popup-tip {
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
-  border: 1px solid var(--border);
+  background: var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: none;
 }
 .mappop .leaflet-popup-content { margin: 11px 13px; font: inherit; line-height: 1.4; }
 .mappop a.leaflet-popup-close-button { color: var(--muted); }
@@ -146,14 +148,125 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .attrib a { color: var(--ink-2); }
 .attrib[hidden] { display: none; }
 
+/* Leaflet's own chrome is an opaque white box with a hard border. Restyled
+   rather than left alone: one solid control beside five glass ones does not
+   read as a deliberate exception, it reads as the one thing that was missed. */
+.leaflet-control-zoom { border: none !important; border-radius: 12px; overflow: hidden;
+  box-shadow: var(--glass-shadow) !important; }
+.leaflet-control-zoom a {
+  background-color: var(--glass-bg) !important; background-image: var(--glass-sheen);
+  color: var(--ink) !important; border-bottom: 1px solid var(--glass-edge) !important;
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  font-weight: 500;
+}
+.leaflet-control-zoom a:first-child { box-shadow: inset 0 1px 0 var(--glass-rim); }
+.leaflet-control-zoom a:last-child { border-bottom: none !important; }
+.leaflet-control-zoom a:hover { background-color: color-mix(in srgb, var(--surface) 78%, transparent) !important; }
+
 #opacwrap input[type=range] { width: 100%; accent-color: var(--accent); }
 #opacval { color: var(--ink-2); font-family: var(--mono); text-transform: none;
   letter-spacing: 0; margin-left: 4px; }
 
-/* floating chrome */
-.float { position: absolute; z-index: 1000; background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
-  backdrop-filter: blur(10px); }
+/* ---------- floating chrome: glass ----------
+ *
+ * Every panel on this page floats over a saturated data field, which is what
+ * makes the material worth getting right and also what constrains it. Four
+ * things together read as glass rather than as a translucent box:
+ *
+ *   1. blur, so the field behind reads as *behind* rather than as texture
+ *      showing through;
+ *   2. saturate(), because blurring alone washes colour out and the result
+ *      looks like fog — the lift back to 180% is what makes it feel refractive;
+ *   3. a bright inset rim along the top edge, which is the specular highlight
+ *      that gives the slab thickness. Without it the panel is a flat cut-out;
+ *   4. a top-down sheen, a little brighter than the rim and fading by 45%, so
+ *      light appears to come from one direction.
+ *
+ * The 78% is the one number here that is not a free aesthetic choice, and it is
+ * higher than it would be on a photograph. This is a verification site: the
+ * colourbar is a legend, the readout is a measurement, and both sit on glass
+ * over a field that can be any colour the ramp contains. It was chosen by
+ * compositing the page over the hot end of the t2m ramp at five viewports and
+ * measuring WCAG contrast on the result, not by eye — at 58% the panel's
+ * micro-labels came out at 1.9:1 in dark mode and the nav links at 3.4:1.
+ *
+ * saturate() is 150% rather than the 180% that reads best on photographs, for
+ * the same reason: it boosts the field's chroma *before* compositing, and the
+ * text has to survive what comes out.
+ *
+ * check_map_render.js section 13 measures this the same way, so thinning the
+ * glass fails a gate instead of quietly costing legibility.
+ */
+:root {
+  --glass-bg: color-mix(in srgb, var(--surface) 78%, transparent);
+  --glass-edge: color-mix(in srgb, var(--ink) 10%, transparent);
+  --glass-rim: rgba(255, 255, 255, .60);
+  --glass-sheen: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,0) 45%);
+  --glass-blur: blur(24px) saturate(150%);
+  --glass-shadow: 0 1px 1px rgba(16,21,28,.05), 0 10px 30px rgba(16,21,28,.13);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    /* The rim drops from .60 to .14: the same highlight that reads as a lit
+       edge on a light surface reads as a glowing outline on a dark one. */
+    --glass-rim: rgba(255, 255, 255, .14);
+    --glass-sheen: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0) 45%);
+    --glass-edge: color-mix(in srgb, var(--ink) 14%, transparent);
+    --glass-shadow: 0 1px 1px rgba(0,0,0,.30), 0 12px 34px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  --glass-rim: rgba(255, 255, 255, .14);
+  --glass-sheen: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0) 45%);
+  --glass-edge: color-mix(in srgb, var(--ink) 14%, transparent);
+  --glass-shadow: 0 1px 1px rgba(0,0,0,.30), 0 12px 34px rgba(0,0,0,.45);
+}
+
+.float, .glass {
+  background-color: var(--glass-bg);
+  background-image: var(--glass-sheen);
+  border: 1px solid var(--glass-edge);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-rim);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+.float { position: absolute; z-index: 1000; }
+
+/* Secondary text needs more weight on glass than it does on an opaque surface.
+   --muted is tuned in site.css against a flat --surface; composited over a
+   saturated field at 78% it measured 2.7:1, which is not a legible label. These
+   are scoped to the glass containers rather than changed in site.css, because
+   the token is correct everywhere it is used on a solid background — index.html
+   and compare.html must not shift. Values chosen to clear 4.5:1 against the
+   worst backdrop the t2m ramp produces, measured, not guessed. */
+.float, .note, .mappop .leaflet-popup-content-wrapper { --muted: #5a6472; }
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .float,
+  :root:where(:not([data-theme="light"])) .note,
+  :root:where(:not([data-theme="light"])) .mappop .leaflet-popup-content-wrapper { --muted: #a3adba; }
+}
+:root[data-theme="dark"] .float,
+:root[data-theme="dark"] .note,
+:root[data-theme="dark"] .mappop .leaflet-popup-content-wrapper { --muted: #a3adba; }
+
+/* Transparency is a preference, not a given. Where the reader has asked for
+   less of it — or for more contrast — the material becomes an opaque panel and
+   keeps only the shadow that separates it from the map. The blur goes too: it
+   costs compositing work for an effect that is no longer visible. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root {
+    --glass-bg: var(--surface);
+    --glass-sheen: none;
+    --glass-rim: transparent;
+    --glass-edge: var(--border);
+  }
+  .float, .glass, .note, .mappop .leaflet-popup-content-wrapper,
+  .leaflet-control-zoom a {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
 
 .topbar { top: 12px; left: 12px; display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
 .topbar a { color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: 13px;
@@ -235,15 +348,21 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
    of those do not fit in 150px without touching. */
 .cbar { display: flex; align-items: center; gap: 9px; }
 .cbar .bar { height: 10px; width: 210px; border-radius: 3px; border: 1px solid var(--border); }
+/* --ink-2, not --muted: these are the values the entire field is read against.
+   They were the faintest text on the page, which is backwards, and over a
+   saturated field on glass they measured 2.3:1. */
 .cbar .ticks { display: flex; justify-content: space-between; width: 210px; font-size: 10px;
-  color: var(--muted); font-family: var(--mono); }
+  color: var(--ink-2); font-family: var(--mono); }
 .cbar .unit { font-size: 11px; color: var(--ink-2); max-width: 190px; }
 .readout { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; min-width: 150px; }
 
 .notes { position: absolute; z-index: 1000; left: 12px; top: 62px; max-width: 420px; }
-.note { font-size: 12.5px; color: var(--ink-2); background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0;
-  padding: 9px 13px; box-shadow: var(--shadow); backdrop-filter: blur(10px); }
+.note { font-size: 12.5px; color: var(--ink-2);
+  background-color: var(--glass-bg); background-image: var(--glass-sheen);
+  border: 1px solid var(--glass-edge); border-left: 3px solid var(--accent);
+  border-radius: 0 12px 12px 0; padding: 9px 13px;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-rim);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
 
 /* Fatal-error card. Centred rather than tucked in the .notes stack: if this is
    showing, there is no map behind it to avoid covering. */

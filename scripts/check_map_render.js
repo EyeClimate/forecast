@@ -879,6 +879,128 @@ function serve() {
   await page.setViewport({ width: 1280, height: 1000 });
   await new Promise((r) => setTimeout(r, 400));
 
+  // --- 13. glass legibility -------------------------------------------------
+  // The floating chrome is translucent, so its effective background is not a
+  // colour anyone chose — it is whatever the field happens to be behind it, and
+  // the field is a temperature ramp that spans violet to dark red. Contrast has
+  // to be measured on the *composited* result, which means rendering the page
+  // and reading the pixels back; no amount of reasoning about the tokens
+  // predicts it. Both themes, over the hot end of the ramp where it is worst.
+  const relLum = ([r, g, b]) => {
+    const f = (v) => (v /= 255) <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const contrast = (a, b) => {
+    const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const CHROME_BOXES = [["panel", "#ctlpanel"], ["bottom bar", ".bottombar"],
+                        ["nav", ".topbar"], ["pane label", "#t1"]];
+  await page.setViewport({ width: 1440, height: 900 });
+
+  let glassFails = 0, worstSeen = { ratio: Infinity };
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+    for (const view of [[22, 20], [5, -25], [28, 55]]) {
+      await page.evaluate((v) => window.__S.maps.map1.setView(v, 4, { animate: false }), view);
+      await new Promise((r) => setTimeout(r, 700));
+      const shot = await page.screenshot({ encoding: "base64" });
+      const res = await page.evaluate(async (url, boxes) => {
+        const img = new Image();
+        img.src = "data:image/png;base64," + url;
+        await img.decode();
+        const c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        // Resolve the text tokens as they apply *inside* the glass — map.html
+        // scopes a darker --muted there, and reading it off :root would test a
+        // colour the panel never uses.
+        const glass = document.getElementById("ctlpanel");
+        const val = (el, n) => {
+          const probe = document.createElement("div");
+          probe.style.color = getComputedStyle(el).getPropertyValue(n).trim();
+          document.body.append(probe);
+          const rgb = getComputedStyle(probe).color.match(/[\d.]+/g).slice(0, 3).map(Number);
+          probe.remove();
+          return rgb;
+        };
+        const inks = { ink: val(glass, "--ink"), "ink-2": val(glass, "--ink-2"),
+                       muted: val(glass, "--muted") };
+        const out = [];
+        for (const [name, sel] of boxes) {
+          const e = document.querySelector(sel);
+          if (!e || e.hidden) continue;
+          const r = e.getBoundingClientRect();
+          if (r.width < 8 || r.height < 8) continue;
+          // The modal colour inside the box is its effective background: the
+          // background dominates a panel by area, glyphs are a minority.
+          const d = ctx.getImageData(r.left + 2, r.top + 2, r.width - 4, r.height - 4).data;
+          const hist = new Map();
+          for (let i = 0; i < d.length; i += 4) {
+            const k = ((d[i] >> 2) << 12) | ((d[i + 1] >> 2) << 6) | (d[i + 2] >> 2);
+            hist.set(k, (hist.get(k) || 0) + 1);
+          }
+          let best = 0, key = 0;
+          for (const [k, n] of hist) if (n > best) { best = n; key = k; }
+          out.push({ name, bg: [((key >> 12) & 63) << 2, ((key >> 6) & 63) << 2, (key & 63) << 2] });
+        }
+        return { inks, out };
+      }, shot, CHROME_BOXES);
+
+      for (const { name, bg } of res.out) {
+        for (const [token, rgb] of Object.entries(res.inks)) {
+          const r = contrast(bg, rgb);
+          if (r < worstSeen.ratio) worstSeen = { ratio: r, name, token, theme, bg };
+          if (r < 4.5) {
+            fail(`glass: ${theme} ${name}, ${token} text is ${r.toFixed(1)}:1 over the composited ` +
+                 `background rgb(${bg.join(",")}) — below the 4.5:1 floor for small text`);
+            glassFails++;
+          }
+        }
+      }
+    }
+  }
+  await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+  if (!glassFails)
+    ok(`glass keeps every text token above 4.5:1 over the ramp (worst ` +
+       `${worstSeen.ratio.toFixed(1)}:1 — ${worstSeen.theme} ${worstSeen.name}, ${worstSeen.token})`);
+
+  // The effect has to actually be an effect, and it has to yield when the
+  // reader has asked for less transparency.
+  const glass = await page.evaluate(() => {
+    const s = getComputedStyle(document.getElementById("ctlpanel"));
+    return { filter: s.backdropFilter || s.webkitBackdropFilter, bg: s.backgroundColor };
+  });
+  if (!/blur/.test(glass.filter || "")) fail(`the panel has no backdrop blur (${glass.filter})`);
+  else ok(`glass is a real backdrop filter (${glass.filter})`);
+
+  // Not every Chrome build can emulate this one; an unsupported media feature
+  // is a gap in the harness, not a defect in the page, so it is reported and
+  // skipped rather than crashing the run.
+  let canEmulate = true;
+  try {
+    await page.emulateMediaFeatures([{ name: "prefers-reduced-transparency", value: "reduce" }]);
+  } catch {
+    canEmulate = false;
+    console.log("     (this Chrome cannot emulate prefers-reduced-transparency — skipped)");
+  }
+  await new Promise((r) => setTimeout(r, 300));
+  if (canEmulate) {
+  const reduced = await page.evaluate(() => {
+    const s = getComputedStyle(document.getElementById("ctlpanel"));
+    const m = s.backgroundColor.match(/[\d.]+/g);
+    return { filter: s.backdropFilter || s.webkitBackdropFilter,
+             alpha: m && m.length > 3 ? Number(m[3]) : 1 };
+  });
+  if (/blur/.test(reduced.filter || "") || reduced.alpha < 0.99)
+    fail(`prefers-reduced-transparency still gets glass (filter ${reduced.filter}, alpha ${reduced.alpha})`);
+  else ok("prefers-reduced-transparency falls back to an opaque panel");
+  await page.emulateMediaFeatures([]);
+  }
+  await page.setViewport({ width: 1280, height: 1000 });
+  await new Promise((r) => setTimeout(r, 400));
+
   await page.screenshot({ path: SHOT, fullPage: false });
   console.log(`     screenshot -> ${SHOT}`);
   if (warnings.length) console.log(`     (${warnings.length} console warning(s))`);
