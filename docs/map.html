@@ -278,7 +278,32 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 
 .ctlpanel { top: 12px; right: 12px; width: 268px; max-height: calc(100% - 140px); overflow-y: auto; padding: 14px; }
 .ctlpanel h2 { margin: 0 0 12px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--muted); font-weight: 700; }
+  color: var(--muted); font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ---------- minimise ----------
+   The panel is 348px of chrome over the one thing the page exists to show, and
+   wanting it out of the way is not a narrow-screen problem — it is a "let me
+   look at the Pacific" problem. The affordance lives on the panel and the way
+   back lives in the same corner, so nothing has to be hunted for.
+
+   Below 820px the nav's Layers button already does this, so the pill stands
+   down there rather than offering the reader two controls for one job. */
+.panelmin { flex: none; display: grid; place-items: center;
+  width: 22px; height: 22px; margin: -3px -3px -3px 0; padding: 0;
+  border: 0; border-radius: 7px; background: none; cursor: pointer; color: var(--muted); }
+.panelmin:hover { background: var(--accent-wash); color: var(--accent-ink); }
+.panelpill { top: 12px; right: 12px; display: flex; align-items: center; gap: 7px;
+  padding: 8px 13px 8px 10px; font: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--ink-2); cursor: pointer; }
+.panelpill:hover { color: var(--ink); }
+.panelpill[hidden] { display: none; }
+/* Same CSS triangle idiom as the disclosure markers, so the two read as the
+   same family of control rather than as two unrelated arrows. */
+.chev { width: 0; height: 0; border: 4px solid transparent; border-left-color: currentColor;
+  transform: translateX(1px); }
+.chev.back { border-left-color: transparent; border-right-color: currentColor;
+  transform: translateX(-1px); }
 .ctl { margin-bottom: 13px; }
 /* Sentence case, not the uppercase micro-label this panel used to use. Ten
    uppercase tracked-out labels stacked vertically read as ten headings of equal
@@ -390,6 +415,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   .ctlpanel[hidden] { display: none; }
   .notes { top: calc(var(--navh, 44px) + 18px); }
   .panelbtn { display: inline-block; }
+  .panelpill { display: none !important; }   /* the nav's Layers button covers it */
   .bottombar { right: 12px; }
   .maprow.two { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   /* The bottom edge is entirely spoken for here: the bar goes full width and
@@ -436,7 +462,12 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   <div class="float fatal" id="fatal" hidden></div>
 
   <aside class="float ctlpanel" id="ctlpanel">
-    <h2>Layer</h2>
+    <h2>Layer
+      <button class="panelmin" id="panelmin" aria-controls="ctlpanel"
+              aria-expanded="true" title="Minimise the layer panel">
+        <i class="chev"></i>
+      </button>
+    </h2>
     <div class="ctl">
       <label for="modelsel">Model</label>
       <select id="modelsel"></select>
@@ -509,6 +540,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
       <div class="prov" id="prov"></div>
     </details>
   </aside>
+
+  <!-- What the panel minimises to. Deliberately in the corner the panel itself
+       occupies: a control that collapses somewhere and reopens somewhere else
+       makes the reader hunt for it. -->
+  <button class="float panelpill" id="panelpill" aria-controls="ctlpanel"
+          aria-expanded="false" title="Show the layer panel" hidden>
+    <i class="chev back"></i>Layers
+  </button>
 
   <div class="float bottombar">
     <span class="leadlabel" id="leadlabel"></span>

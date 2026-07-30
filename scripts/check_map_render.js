@@ -879,6 +879,76 @@ function serve() {
   await page.setViewport({ width: 1280, height: 1000 });
   await new Promise((r) => setTimeout(r, 400));
 
+  // Minimising on a wide screen. Four controls and the viewport all drive the
+  // panel's visibility, so what is actually being checked is that they agree:
+  // the pill has to appear where the panel was, the choice has to survive a
+  // reload, and it must not be confused with the narrow-screen default — which
+  // is a fact about the window, not a preference, and must not be persisted.
+  const vis = () => page.evaluate(() => {
+    const on = (id) => {
+      const e = document.getElementById(id);
+      return !!e && !e.hidden && getComputedStyle(e).display !== "none";
+    };
+    const p = document.getElementById("ctlpanel").getBoundingClientRect();
+    const q = document.getElementById("panelpill").getBoundingClientRect();
+    return { panel: on("ctlpanel"), pill: on("panelpill"), navBtn: on("panelbtn"),
+             panelRight: Math.round(p.right), pillRight: Math.round(q.right),
+             pillTop: Math.round(q.top), panelTop: Math.round(p.top) };
+  });
+  const before = await vis();
+  await page.evaluate(() => document.getElementById("panelmin").click());
+  await new Promise((r) => setTimeout(r, 400));
+  const mini = await vis();
+  if (mini.panel || !mini.pill) fail(`minimise left panel=${mini.panel} pill=${mini.pill}`);
+  // Reopening somewhere other than where it collapsed makes the reader hunt.
+  else if (Math.abs(mini.pillRight - before.panelRight) > 2 || Math.abs(mini.pillTop - before.panelTop) > 2)
+    fail(`the pill (${mini.pillRight},${mini.pillTop}) is not in the corner the panel vacated ` +
+         `(${before.panelRight},${before.panelTop})`);
+  else ok("minimise collapses the panel to a pill in the same corner");
+
+  await page.reload({ waitUntil: "networkidle0" });
+  await page.evaluate(() => window.__mapReady);
+  await new Promise((r) => setTimeout(r, 400));
+  const kept = await vis();
+  if (kept.panel || !kept.pill) fail("the minimised state did not survive a reload");
+  else ok("minimised state persists across a reload");
+
+  await page.evaluate(() => document.getElementById("panelpill").click());
+  await new Promise((r) => setTimeout(r, 400));
+  const back = await vis();
+  if (!back.panel || back.pill) fail("the pill did not restore the panel");
+  else ok("the pill restores the panel");
+
+  // Narrowing must not offer two controls for one job, and must not overwrite
+  // the desktop preference on the way through.
+  await page.evaluate(() => document.getElementById("panelmin").click());
+  await page.setViewport({ width: 600, height: 900 });
+  await new Promise((r) => setTimeout(r, 500));
+  const narrowed = await vis();
+  if (narrowed.pill) fail("600px: the pill and the nav's Layers button both offer to open the panel");
+  else if (!narrowed.navBtn) fail("600px: no control to open the panel at all");
+  else ok("600px: the pill stands down and the nav's Layers button takes over");
+  await page.evaluate(() => document.getElementById("panelbtn").click());
+  await new Promise((r) => setTimeout(r, 400));
+  if (!(await vis()).panel) fail("600px: the nav's Layers button did not open the panel");
+  else ok("600px: the nav's Layers button still opens the drawer");
+
+  // Opening the drawer on a phone is navigation, not a preference: going back
+  // to a wide window must restore what was chosen there, not what the drawer
+  // was last left as.
+  await page.setViewport({ width: 1280, height: 1000 });
+  await new Promise((r) => setTimeout(r, 500));
+  const restored = await vis();
+  if (restored.panel || !restored.pill)
+    fail("returning to a wide window discarded the minimised preference set there");
+  else ok("the desktop minimise preference survives a trip through the narrow layout");
+
+  // Leave the page as the later sections expect to find it.
+  await page.evaluate(() => localStorage.removeItem("scoreboard.panelmin"));
+  await page.reload({ waitUntil: "networkidle0" });
+  await page.evaluate(() => window.__mapReady);
+  await new Promise((r) => setTimeout(r, 500));
+
   // --- 13. glass legibility -------------------------------------------------
   // The floating chrome is translucent, so its effective background is not a
   // colour anyone chose — it is whatever the field happens to be behind it, and

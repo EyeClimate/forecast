@@ -85,12 +85,6 @@ async function boot() {
   trackChromeHeights();
   initFolds();
 
-  const btn = $("panelbtn");
-  if (btn) btn.onclick = () => {
-    const p = $("ctlpanel");
-    p.hidden = !p.hidden;
-    setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
-  };
   trackPanelBreakpoint();
 
   await render();
@@ -264,22 +258,59 @@ function updateDisplaySummary() {
   out.textContent = bits.join(" · ");
 }
 
-/* Narrow screens: the panel covers too much of the map to stay open.
+/* Whether the layer panel is showing.
  *
- * The decision used to be made once, at boot, from a matchMedia *check* — so
- * narrowing an already-open window left a full-width slab sitting over the map
- * with its dismiss button pushed off the edge of the nav. It is a matchMedia
- * *subscription* now, so crossing the breakpoint in either direction is handled
- * however the window got there. */
+ * Three controls open and close it — the nav's Layers button, the minimise
+ * button on the panel, and the pill it minimises to — and the viewport moves it
+ * as well when the window crosses 820px. All four go through here, because the
+ * bug this replaced was two of them disagreeing: the breakpoint used to be a
+ * matchMedia *check* made once at boot, so narrowing an already-open window left
+ * a full-width slab over the map with its dismiss button off the edge of the
+ * nav. It is a *subscription* now, and there is exactly one place that decides.
+ *
+ * Minimising is remembered; the narrow-screen default is not. Collapsing the
+ * panel on a desktop is a preference about how you like the map, and it should
+ * survive a reload. Being narrow is a fact about the window, and re-deriving it
+ * on every load is both correct and free. */
+const PANEL_KEY = "scoreboard.panelmin";
+const NARROW = "(max-width: 820px)";
+
+function loadMinimised() {
+  try { return localStorage.getItem(PANEL_KEY) === "1"; } catch { return false; }
+}
+
+function showPanel(show) {
+  S.panelHidden = !show;
+  // Only a deliberate choice on a wide screen is a preference worth storing;
+  // toggling the drawer on a phone is navigation.
+  if (!window.matchMedia(NARROW).matches) {
+    try { localStorage.setItem(PANEL_KEY, show ? "0" : "1"); } catch { /* ignore */ }
+  }
+  applyPanel();
+}
+
+function applyPanel() {
+  const panel = $("ctlpanel"), pill = $("panelpill"), min = $("panelmin");
+  panel.hidden = S.panelHidden;
+  pill.hidden = !S.panelHidden;
+  pill.setAttribute("aria-expanded", String(!S.panelHidden));
+  if (min) min.setAttribute("aria-expanded", String(!S.panelHidden));
+  // The panes are sized by Leaflet, not by CSS reflow, so a panel that comes
+  // and goes has to be announced or the map keeps its old dimensions.
+  setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
+}
+
 function trackPanelBreakpoint() {
-  const panel = $("ctlpanel");
-  const mq = window.matchMedia("(max-width: 820px)");
-  const sync = () => {
-    panel.hidden = mq.matches;
-    setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
-  };
-  mq.addEventListener("change", sync);
-  if (mq.matches) panel.hidden = true;
+  const mq = window.matchMedia(NARROW);
+  S.panelHidden = mq.matches || loadMinimised();
+  mq.addEventListener("change", (e) => {
+    S.panelHidden = e.matches || loadMinimised();
+    applyPanel();
+  });
+  $("panelbtn").onclick = () => showPanel(S.panelHidden);
+  $("panelmin").onclick = () => showPanel(false);
+  $("panelpill").onclick = () => showPanel(true);
+  applyPanel();
 }
 
 /* ---------- basemap ----------

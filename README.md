@@ -361,6 +361,20 @@ browser already owns, it is keyboard- and screen-reader-correct for free, and
 the render gate drive them without opening it. Which sections are open persists
 in `localStorage`; both default to closed.
 
+**Minimising.** The panel collapses to a `‹ Layers` pill via the button in its
+header, and the pill sits in the corner the panel vacated — a control that
+collapses in one place and reopens in another makes the reader hunt for it. The
+choice is remembered.
+
+Four things move this panel — the nav's `Layers` button, the minimise button, the
+pill, and the viewport crossing 820 px — so all four go through one function that
+decides. Two of them disagreeing is precisely the bug described below. The
+persistence rule is worth stating because it is not symmetric: **minimising on a
+wide screen is a preference and survives a reload; the narrow-screen default is a
+fact about the window and is re-derived every time.** Opening the drawer on a
+phone therefore does not overwrite what you chose at desk width. Below 820 px the
+pill stands down entirely, since the nav's button already does that job.
+
 **Narrow windows.** Below 820 px the panel becomes a drawer bounded by the nav
 above and the bottom bar below, opened from the nav's `Layers` button. Three
 things had to be true for that to work, and each had been false: the breakpoint
