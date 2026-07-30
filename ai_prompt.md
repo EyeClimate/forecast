@@ -118,12 +118,10 @@ needs manual surgery after every run.
 > but do not invent a color for it — new models get colors manually (next
 > free categorical slot is yellow #eda100/#c98500). Do NOT re-add the
 > scorecard heatmap section — it was deliberately removed. Acceptance: run
-> publish, diff `scoreboard.html` against git/backup to show only DATA,
-> timestamp, and provenance changed, and confirm the page renders in a
-> browser with the new init counts. Then republish the updated file to the
-> existing Artifact (pass
-> `url: https://eyeclimate.github.io/forecast/`
-> to the Artifact tool so it updates in place, favicon 🛰️).
+> publish, diff the page against git to show only DATA, timestamp, and
+> provenance changed, and confirm it renders in a browser with the new init
+> counts. Then commit the refreshed page and push — that is what updates the
+> live site at https://eyeclimate.github.io/forecast/.
 
 ## Step 4 — Phase 2a: real-time initial conditions (GFS)
 

@@ -94,10 +94,8 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
      and the footer "scores generated" timestamp (parquet mtime) — leaving
      all other bytes untouched. Models present in the parquet but missing
      from the page's hand-curated `MODELS` array trigger a loud warning;
-     colors are assigned manually, never invented. The same file is also
-     published as an Artifact
-     (https://eyeclimate.github.io/forecast/);
-     pushing it there is a manual step.
+     colors are assigned manually, never invented. Committing this file and
+     pushing is what updates the live site (see Hosting below).
    - **`docs/charts.html`** — the plain matplotlib page: scorecard table at
      24/72/120 h, RMSE and ACC lead-time curves, precip CSI/FSS panels, and
      a forecast-vs-truth precip map for the latest scored init. Regenerated
