@@ -23,3 +23,7 @@ docs/charts.html
 # the asymmetry is easy to misread.
 !docs/lib/
 !docs/data/
+
+# Dev-only tooling (puppeteer + chromium). The site itself ships no JS
+# dependencies — everything under docs/lib/vendor/ is committed.
+node_modules/

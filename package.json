@@ -1,0 +1,12 @@
+{
+  "name": "forecast-scoreboard-devtools",
+  "private": true,
+  "description": "Dev-only tooling for the static site in docs/. The site itself ships no JS dependencies — everything under docs/lib/vendor/ is committed. Puppeteer exists so the front-end pages can be verified (console errors, orientation of rendered fields) instead of eyeballed.",
+  "scripts": {
+    "check:compare": "node scripts/check_compare_data.js",
+    "check:map": "node scripts/check_map_render.js"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.43.1"
+  }
+}

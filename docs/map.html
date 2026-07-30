@@ -1,0 +1,163 @@
+<meta charset="utf-8">
+<title>Forecast Map — AI Weather Model Verification</title>
+<link rel="stylesheet" href="lib/vendor/leaflet.css">
+<link rel="stylesheet" href="lib/css/site.css">
+<style id="model-colors">
+/* generated from config.yaml `display.models` by scoreboard/publish.py */
+:root {
+  --s-aurora: #2a78d6;
+  --s-fuxi: #008300;
+  --s-atlas: #e87ba4;
+  --s-ref: #848d9b;
+  --s-fengwu: #eda100;
+  --s-pangu6: #4a3aa7;
+  --s-sfno: #eb6834;
+  --s-fcn3: #1baf7a;
+  --s-graphcast: #b23bbf;
+  --s-aifs: #96751a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --s-aurora: #3987e5;
+    --s-fuxi: #008300;
+    --s-atlas: #d55181;
+    --s-ref: #7d8694;
+    --s-fengwu: #c98500;
+    --s-pangu6: #9085e9;
+    --s-sfno: #d95926;
+    --s-fcn3: #199e70;
+    --s-graphcast: #c46cd0;
+    --s-aifs: #a8892c;
+  }
+}
+:root[data-theme="dark"] {
+  --s-aurora: #3987e5;
+  --s-fuxi: #008300;
+  --s-atlas: #d55181;
+  --s-ref: #7d8694;
+  --s-fengwu: #c98500;
+  --s-pangu6: #9085e9;
+  --s-sfno: #d95926;
+  --s-fcn3: #199e70;
+  --s-graphcast: #c46cd0;
+  --s-aifs: #a8892c;
+}
+</style>
+<style>
+/* ---------- map page ---------- */
+.controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; margin-bottom: 16px; }
+.ctl { display: flex; flex-direction: column; gap: 6px; }
+.ctl > label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.ctl select { font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink); min-width: 170px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs button { font: inherit; font-size: 13px; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink-2); padding: 6px 11px; border-radius: 8px; }
+.tabs button.on { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+.maprow { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.maprow.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .maprow.two { grid-template-columns: 1fr; } }
+.panel { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.panel h3 { margin: 0; padding: 9px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; }
+.panel h3 .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.leafletmap { height: 420px; background: var(--page); }
+.leaflet-container { background: var(--page); font: inherit; }
+
+.sliderrow { display: flex; align-items: center; gap: 14px; margin: 16px 0 8px; flex-wrap: wrap; }
+.sliderrow input[type=range] { flex: 1; min-width: 220px; accent-color: var(--accent); }
+.leadlabel { font-family: var(--mono); font-size: 13px; color: var(--ink); min-width: 190px; }
+
+.cbar { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.cbar .bar { height: 12px; width: 260px; border-radius: 3px; border: 1px solid var(--border); }
+.cbar .ticks { display: flex; justify-content: space-between; width: 260px; font-size: 11px;
+  color: var(--muted); font-family: var(--mono); }
+.cbar .unit { font-size: 12px; color: var(--ink-2); }
+
+.readout { font-family: var(--mono); font-size: 13px; color: var(--ink-2); margin: 10px 0 0; min-height: 20px; }
+.note { font-size: 13px; color: var(--ink-2); background: var(--accent-wash);
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+.coast { fill: none; stroke: var(--ink); stroke-width: .8; opacity: .55; }
+</style>
+
+<nav class="pagenav">
+  <div class="wrap">
+    <a href="index.html">Leaderboard</a>
+    <a href="compare.html">Compare a location</a>
+    <a href="map.html" class="on" aria-current="page">Map</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Global fields · forecast and error</p>
+    <h1>Forecast Map</h1>
+    <p class="lede">Every model's global field for one init, and — the part a weather
+    map normally can't show you — the same field minus the truth it was scored
+    against. Red is too warm, blue too cold, grey is right.</p>
+    <div class="provenance" id="prov"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <div class="controls">
+      <div class="ctl">
+        <label for="initsel">Init time</label>
+        <select id="initsel"></select>
+      </div>
+      <div class="ctl">
+        <label for="modelsel">Model</label>
+        <select id="modelsel"></select>
+      </div>
+      <div class="ctl" id="model2wrap" hidden>
+        <label for="modelsel2">Compare with</label>
+        <select id="modelsel2"></select>
+      </div>
+      <div class="ctl">
+        <label>Variable</label>
+        <div class="tabs" id="vartabs"></div>
+      </div>
+      <div class="ctl">
+        <label>View</label>
+        <div class="tabs" id="viewtabs">
+          <button data-kind="forecast" class="on">Forecast</button>
+          <button data-kind="error">Error vs truth</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label>Layout</label>
+        <div class="tabs" id="paneltabs">
+          <button data-panes="1" class="on">Single</button>
+          <button data-panes="2">Side by side</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="notes"></div>
+
+    <div class="sliderrow">
+      <span class="leadlabel" id="leadlabel"></span>
+      <input type="range" id="leadslider" min="0" max="0" step="1" value="0" aria-label="lead time">
+    </div>
+
+    <div class="maprow" id="maprow">
+      <div class="panel"><h3 id="t1"></h3><div class="leafletmap" id="map1"></div></div>
+      <div class="panel" id="panel2" hidden><h3 id="t2"></h3><div class="leafletmap" id="map2"></div></div>
+    </div>
+
+    <div class="cbar">
+      <div>
+        <div class="bar" id="cbar"></div>
+        <div class="ticks" id="cbarticks"></div>
+      </div>
+      <span class="unit" id="cbarunit"></span>
+    </div>
+    <p class="readout" id="readout"></p>
+  </section>
+</main>
+
+<script src="lib/vendor/leaflet.js"></script>
+<script type="module" src="lib/js/map.js"></script>
