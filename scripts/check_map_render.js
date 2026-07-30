@@ -192,6 +192,27 @@ function serve() {
     fail(`panes not linked: ${JSON.stringify(sync)}`);
   else ok(`side-by-side panes stay locked (both at ${sync.a[0].toFixed(1)}, ${sync.a[1].toFixed(1)} z${sync.za})`);
 
+  // --- 7. floating chrome must not cover the pane labels -------------------
+  // On a full-bleed map everything is absolutely positioned, so nothing throws
+  // when two panels land on top of each other — the label simply vanishes.
+  // Screenshots caught this once; assert it instead of relying on noticing.
+  const overlaps = await page.evaluate(() => {
+    const r = (sel) => { const e = document.querySelector(sel); if (!e || e.hidden) return null;
+      const b = e.getBoundingClientRect(); return b.width && b.height ? b : null; };
+    const hit = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const chrome = { nav: r(".topbar"), panel: r(".ctlpanel"), bottom: r(".bottombar") };
+    const out = [];
+    for (const tag of ["#t1", "#t2"]) {
+      const t = r(tag);
+      if (!t) { if (tag === "#t1") out.push(`${tag} is not visible at all`); continue; }
+      for (const [name, c] of Object.entries(chrome))
+        if (hit(t, c)) out.push(`${tag} overlaps .${name}`);
+    }
+    return out;
+  });
+  if (overlaps.length) overlaps.forEach((o) => fail("layout: " + o));
+  else ok("pane labels clear of the nav, control panel and bottom bar");
+
   await page.screenshot({ path: SHOT, fullPage: false });
   console.log(`     screenshot -> ${SHOT}`);
   if (warnings.length) console.log(`     (${warnings.length} console warning(s))`);

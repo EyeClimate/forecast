@@ -47,6 +47,22 @@ async function boot() {
   buildViewTabs();
   buildPanelTabs();
   makeMap("map1"); makeMap("map2");
+
+  // The map fills the viewport, so a resize changes its size rather than the
+  // page's scroll height — Leaflet has to be told.
+  window.addEventListener("resize", () => {
+    Object.values(S.maps).forEach((m) => m.invalidateSize());
+  });
+
+  // Narrow screens: the control panel covers too much of the map to stay open.
+  const btn = $("panelbtn");
+  if (btn) btn.onclick = () => {
+    const p = $("ctlpanel");
+    p.hidden = !p.hidden;
+    setTimeout(() => Object.values(S.maps).forEach((m) => m.invalidateSize()), 0);
+  };
+  if (window.matchMedia("(max-width: 820px)").matches) $("ctlpanel").hidden = true;
+
   await render();
 }
 
@@ -129,11 +145,15 @@ S.maps = {}; S.layers = {}; S.syncing = false;
 function makeMap(id) {
   const m = L.map(id, {
     crs: L.CRS.EPSG4326,
-    center: [10, 0], zoom: 1, minZoom: 0, maxZoom: 6,
-    zoomControl: id === "map1",
+    minZoom: 0, maxZoom: 6,
+    zoomControl: false,          // the floating panel is the chrome; see below
     attributionControl: false,
     worldCopyJump: false,
   });
+  // Full-bleed: start showing the whole world rather than an arbitrary zoom, so
+  // the first paint is the globe and not a random ocean.
+  m.fitWorld();
+  if (id === "map1") L.control.zoom({ position: "bottomright" }).addTo(m);
   S.maps[id] = m;
 
   // Coastlines on top of the field, no basemap underneath.
