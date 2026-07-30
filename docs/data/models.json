@@ -1,0 +1,85 @@
+[
+  {
+    "id": "aurora",
+    "label": "Aurora",
+    "css_var": "--s-aurora",
+    "color": "#2a78d6",
+    "color_dark": "#3987e5",
+    "width": 2
+  },
+  {
+    "id": "fuxi",
+    "label": "FuXi",
+    "css_var": "--s-fuxi",
+    "color": "#008300",
+    "color_dark": "#008300",
+    "width": 2
+  },
+  {
+    "id": "atlas",
+    "label": "Atlas",
+    "css_var": "--s-atlas",
+    "color": "#e87ba4",
+    "color_dark": "#d55181",
+    "width": 2
+  },
+  {
+    "id": "persistence",
+    "label": "Persistence",
+    "css_var": "--s-ref",
+    "color": "#848d9b",
+    "color_dark": "#7d8694",
+    "width": 1.5,
+    "short": "Persist.",
+    "baseline": true
+  },
+  {
+    "id": "fengwu",
+    "label": "FengWu",
+    "css_var": "--s-fengwu",
+    "color": "#eda100",
+    "color_dark": "#c98500",
+    "width": 2
+  },
+  {
+    "id": "pangu6",
+    "label": "Pangu",
+    "css_var": "--s-pangu6",
+    "color": "#4a3aa7",
+    "color_dark": "#9085e9",
+    "width": 2
+  },
+  {
+    "id": "sfno",
+    "label": "SFNO",
+    "css_var": "--s-sfno",
+    "color": "#eb6834",
+    "color_dark": "#d95926",
+    "width": 2
+  },
+  {
+    "id": "fcn3",
+    "label": "FCN3",
+    "css_var": "--s-fcn3",
+    "color": "#1baf7a",
+    "color_dark": "#199e70",
+    "width": 2
+  },
+  {
+    "id": "graphcast_oper",
+    "label": "GraphCast",
+    "css_var": "--s-graphcast",
+    "color": "#b23bbf",
+    "color_dark": "#c46cd0",
+    "width": 2,
+    "short": "GraphC."
+  },
+  {
+    "id": "aifs",
+    "label": "AIFS",
+    "css_var": "--s-aifs",
+    "color": "#96751a",
+    "color_dark": "#a8892c",
+    "width": 2
+  }
+]

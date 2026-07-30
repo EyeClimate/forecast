@@ -13,11 +13,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from . import sources
+from . import export, sources
 from .verify import metrics_path
 
-UNITS = {"t2m": "K", "u10m": "m/s", "v10m": "m/s", "z500": "m2/s2",
-         "t850": "K", "msl": "Pa", "tp": "mm/6h", "tp06": "mm/6h"}
+# Units and the provenance-label helpers live in export.py — manifest.json has
+# to describe an init the same way this page's chips do, so there is one copy.
 SCORECARD_LEADS = [24, 72, 120]
 
 
@@ -143,31 +143,12 @@ def _scorecard(df) -> str:
 # land on, and what GitHub Pages serves from docs/. The plain matplotlib
 # page generated below is secondary and lands at charts.html.
 #
-# The page is a self-contained file whose data lives in one inline JSON blob
-# (`const DATA = {...};`). Every publish rewrites, in place, exactly three
-# things: that blob, the header provenance "inits ..." span, and the footer
-# "scores generated ..." timestamp. All other bytes are left untouched —
-# markup, styles, scripts, and the MODELS color registry are hand-maintained.
-
-SOURCE_LABELS = {
-    "era5_arco": "ERA5 (ARCO)",
-    "gfs": "GFS",
-    "gfs_analysis": "GFS analysis",
-    "imerg_late": "IMERG Late",
-}
-
-
-def _uniq_label(series) -> str:
-    vals = sorted(series.unique())
-    return vals[0] if len(vals) == 1 else "+".join(vals)
-
-
-def _pretty_label(raw: str) -> str:
-    """Display form of a DATA metadata label: 'era5_arco+gfs' -> 'ERA5 (ARCO)
-    + GFS', 'final+provisional' -> 'FINAL + PROVISIONAL'."""
-    return " + ".join(SOURCE_LABELS.get(p, p.replace("_", " ").upper())
-                      for p in raw.split("+"))
-
+# The page's data lives in one inline JSON blob (`const DATA = {...};`). Every
+# publish rewrites, in place, only these spots: that blob, the `const MODELS`
+# array and the `<style id="model-colors">` block (both generated from
+# config.yaml's `display.models`), the header provenance "inits ..." span, the
+# source/tier chips, and the footer "scores generated ..." timestamp. All other
+# bytes — markup, styles, scripts — are hand-maintained and left untouched.
 
 def _init_range_label(inits: list) -> str:
     """'Jan 1–31 + Jul 1–7 2023' from a sorted list of init timestamps."""
@@ -236,34 +217,51 @@ def _scoreboard_data(df: pd.DataFrame) -> dict:
         "leads": leads,
         "init_times": [f"{pd.Timestamp(t):%Y-%m-%d %H:%M:%S}" for t in inits],
         "n_scores": int(len(df)),
-        "truth": _uniq_label(df.truth_source),
-        "init_source": _uniq_label(df.init_source),
-        "tier": _uniq_label(df.tier),
+        "truth": export.uniq_label(df.truth_source),
+        "init_source": export.uniq_label(df.init_source),
+        "tier": export.uniq_label(df.tier),
         "data": data,
     }
 
 
-def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path) -> Path | None:
-    """Rewrite DATA, provenance, and timestamp in the designed index.html."""
+def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path,
+                       cfg: dict | None = None) -> Path | None:
+    """Rewrite DATA, the model registry, provenance, and timestamp in index.html."""
     page = site / "index.html"
     if not page.exists():
         print(f"[publish] {page} not found, skipping designed page")
         return None
     html = page.read_text()
 
-    # Models present in the parquet but absent from the page's hand-curated
-    # MODELS array are embedded in DATA but never drawn — warn, don't invent
-    # a color (next free categorical slot: yellow #eda100 / #c98500).
-    m = re.search(r"const MODELS = \[(.*?)\];", html, re.S)
-    page_models = set(re.findall(r'id: "([^"]+)"', m.group(1))) if m else set()
-    missing = sorted(set(df.model.unique()) - page_models)
-    if missing:
-        print("!" * 74)
-        print(f"[publish] WARNING: {missing} in metrics.parquet but NOT in "
-              f"{page.name}'s MODELS array — embedded in DATA yet invisible on "
-              f"the page. Assign colors manually (next free slot: yellow "
-              f"#eda100/#c98500).")
-        print("!" * 74)
+    # The MODELS array and the model colour custom properties are generated from
+    # config.yaml's `display.models`, so the page cannot drift from the registry
+    # the way it used to (this replaced a hand-curated array plus a warning).
+    # A model scored but absent from `display.models` is still worth shouting
+    # about: it lands in DATA yet has no colour or label to draw with.
+    if cfg is not None:
+        html, n = re.subn(r"const MODELS = \[.*?\];",
+                          lambda _: export.models_js_array(cfg), html,
+                          count=1, flags=re.S)
+        if n != 1:
+            raise RuntimeError(f"{page.name}: `const MODELS = [...];` not found")
+        html, n = re.subn(r'<style id="model-colors">.*?</style>',
+                          lambda _: ('<style id="model-colors">\n'
+                                     + export.model_colors_css(cfg)
+                                     + "</style>"),
+                          html, count=1, flags=re.S)
+        if n != 1:
+            raise RuntimeError(
+                f'{page.name}: `<style id="model-colors">` block not found')
+
+        configured = {m["id"] for m in export.models_payload(cfg)}
+        missing = sorted(set(df.model.unique()) - configured)
+        if missing:
+            print("!" * 74)
+            print(f"[publish] WARNING: {missing} in metrics.parquet but NOT in "
+                  f"config.yaml's `display.models` — embedded in DATA yet "
+                  f"invisible on the page. Add them there with a colour (next "
+                  f"free categorical slot: teal #0f9b9b / #2bb8b8).")
+            print("!" * 74)
 
     payload = _scoreboard_data(df)
     blob = json.dumps(payload, separators=(",", ": "))
@@ -288,7 +286,7 @@ def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path) -> Path | None
     # claiming all-ERA5 / all-FINAL, which is simply false.
     for field, key in (("init source", "init_source"), ("truth", "truth"),
                        ("tier", "tier")):
-        chip = f"<span>{field} <b>{_pretty_label(payload[key])}</b></span>"
+        chip = f"<span>{field} <b>{export.pretty_label(payload[key])}</b></span>"
         html, n = re.subn(rf"<span>{field} <b>.*?</b></span>",
                           lambda _, c=chip: c, html, count=1)
         if n != 1:
@@ -322,7 +320,7 @@ def publish(cfg: dict, models: list[str] | None = None) -> Path:
 
     images = []
     for var in cfg["verification"]["state_variables"]:
-        unit = UNITS.get(var, "")
+        unit = export.UNITS.get(var, "")
         if _lead_curves(df, "rmse", var, f"RMSE ({unit})",
                         f"{var} RMSE vs lead time (global, lat-weighted)",
                         assets / f"rmse_{var}.png"):
@@ -375,5 +373,29 @@ generated {stamp} · truth: ERA5 (WeatherBench2) · tier: final</p>
     out.write_text(html)
     print(f"[publish] charts page -> {out}")
 
-    refresh_scoreboard(df_full, mpath, site)
+    refresh_scoreboard(df_full, mpath, site, cfg)
+    print(f"[publish] models.json -> {export.write_models_json(cfg, site)}")
     return out
+
+
+def main():
+    """`python -m scoreboard.publish` — regenerate the site from the parquet.
+
+    Publishing has only ever run as a tail of `run_range`, which makes verifying
+    a page edit awkward. This entry point exists so it can be run on its own.
+    """
+    import argparse
+
+    import yaml
+
+    p = argparse.ArgumentParser(
+        description="Regenerate the scoreboard site from data/metrics.parquet")
+    p.add_argument("--config", default="config.yaml")
+    p.add_argument("--models", nargs="*", default=None,
+                   help="limit the plain charts page to these models")
+    a = p.parse_args()
+    publish(yaml.safe_load(Path(a.config).read_text()), a.models)
+
+
+if __name__ == "__main__":
+    main()

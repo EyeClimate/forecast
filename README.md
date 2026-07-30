@@ -115,12 +115,15 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
      skewing the rest.
 
      Each publish rewrites, in place, only these spots — the `const DATA`
-     blob, the header "inits …" span, the `init source` / `truth` / `tier`
-     chips, and the footer "scores generated" timestamp (parquet mtime) —
-     leaving all other bytes untouched. Models present in the parquet but
-     missing from the page's hand-curated `MODELS` array trigger a loud
-     warning; colors are assigned manually, never invented. Committing this
-     file and pushing is what updates the live site (see Hosting below).
+     blob, the `const MODELS` array and the `<style id="model-colors">` block
+     (both generated from `config.yaml`'s `display.models`, so the page's
+     colours cannot drift from the registry), the header "inits …" span, the
+     `init source` / `truth` / `tier` chips, and the footer "scores generated"
+     timestamp (parquet mtime) — leaving all other bytes untouched. A model
+     scored in the parquet but absent from `display.models` still triggers a
+     loud warning: it lands in `DATA` with no colour or label to draw it with.
+     Committing this file and pushing is what updates the live site (see
+     Hosting below).
 
      Page weight grows with init count (~130 KB per init). Past a few
      hundred inits, switch to monthly aggregates or on-demand JSON files
@@ -266,7 +269,8 @@ don't inherit the env var.
 ## Layout
 
 ```
-config.yaml              # model registry, verification config, regime cutoff
+config.yaml              # model registry, verification config, regime cutoff,
+                         #   display block (colours, cities, map settings)
 scoreboard/
   run_range.py           # entrypoint: forecast → verify → publish over a range
   sources.py             # regime-aware data source resolution + derived r/tp06
@@ -274,19 +278,27 @@ scoreboard/
   verify.py              # metrics computation + locked parquet append
   sweep.py               # retention: delete scored forecast zarrs (cron)
   publish.py             # static site generation
+  export.py              # docs/data/: models.json, manifest.json, points/**
+scripts/
+  check_export.py        # gate for everything export.py writes
 data/                    # gitignored
   forecasts/<model>/<init>.zarr
   metrics.parquet
 docs/                    # GitHub Pages root (branch: main, folder: /docs)
-  index.html             # designed single-file page — the published site
+  index.html             # designed leaderboard page — the published site
   charts.html            # plain matplotlib page (gitignored)
   assets/                # PNGs for charts.html (gitignored)
+  lib/                   # AUTHORED front-end code, committed
+    css/site.css         #   shell shared by all pages
+  data/                  # GENERATED payloads the explorer pages fetch, committed
+    models.json  manifest.json  points/<init>/<city>.json  schema/
 ```
 
 ## Hosting
 
-`docs/index.html` is self-contained (metrics inlined, no external requests),
-so hosting is just static file serving:
+Nothing is fetched from a third party — metrics are inlined in
+`docs/index.html`, and the stylesheet, `docs/lib/`, and `docs/data/` are all
+served from the same directory — so hosting is just static file serving:
 
 - **GitHub Pages** — repo Settings → Pages → *Deploy from a branch*,
   `main` + `/docs`. Every `git push` updates the live site; no CI needed.

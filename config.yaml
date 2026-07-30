@@ -60,6 +60,74 @@ retention_days: 30
 # originally assumed. Lower this only after checking ARCO's actual lag.
 historic_cutoff_days: 120
 
+# Presentation layer — the single source of truth for anything a page draws.
+# `publish.py` injects `models` into docs/index.html (both the `const MODELS`
+# array and the generated <style id="model-colors"> block); `export.py` emits it
+# as docs/data/models.json for compare.html and map.html. Do not hardcode model
+# colours or labels in a page.
+display:
+  # Order is the legend/draw order on the charts — not config's `models:` order.
+  # `css_var` names are kept as they were in the hand-written stylesheet so the
+  # JS `cvar` lookups keep working.
+  models:
+    - {id: aurora,         label: Aurora,      css_var: --s-aurora,    color: "#2a78d6", color_dark: "#3987e5", width: 2}
+    - {id: fuxi,           label: FuXi,        css_var: --s-fuxi,      color: "#008300", color_dark: "#008300", width: 2}
+    - {id: atlas,          label: Atlas,       css_var: --s-atlas,     color: "#e87ba4", color_dark: "#d55181", width: 2}
+    - {id: persistence,    label: Persistence, css_var: --s-ref,       color: "#848d9b", color_dark: "#7d8694", width: 1.5,
+       short: "Persist.", baseline: true}
+    - {id: fengwu,         label: FengWu,      css_var: --s-fengwu,    color: "#eda100", color_dark: "#c98500", width: 2}
+    - {id: pangu6,         label: Pangu,       css_var: --s-pangu6,    color: "#4a3aa7", color_dark: "#9085e9", width: 2}
+    - {id: sfno,           label: SFNO,        css_var: --s-sfno,      color: "#eb6834", color_dark: "#d95926", width: 2}
+    - {id: fcn3,           label: FCN3,        css_var: --s-fcn3,      color: "#1baf7a", color_dark: "#199e70", width: 2}
+    - {id: graphcast_oper, label: GraphCast,   css_var: --s-graphcast, color: "#b23bbf", color_dark: "#c46cd0", width: 2,
+       short: "GraphC."}
+    - {id: aifs,           label: AIFS,        css_var: --s-aifs,      color: "#96751a", color_dark: "#a8892c", width: 2}
+
+  # Sampling points for compare.html (EXPLORER_STEPS.md E2). Chosen for global
+  # coverage across all four verification regions rather than by population
+  # alone — the tropics and SH extratropics need enough points to be more than
+  # anecdote, since that is where the models differ most.
+  cities:
+    - {name: Tokyo,          lat:  35.68, lon:  139.69}
+    - {name: Delhi,          lat:  28.61, lon:   77.21}
+    - {name: Shanghai,       lat:  31.23, lon:  121.47}
+    - {name: Dhaka,          lat:  23.81, lon:   90.41}
+    - {name: São Paulo,      lat: -23.55, lon:  -46.63}
+    - {name: Cairo,          lat:  30.04, lon:   31.24}
+    - {name: Mexico City,    lat:  19.43, lon:  -99.13}
+    - {name: Beijing,        lat:  39.90, lon:  116.41}
+    - {name: Mumbai,         lat:  19.08, lon:   72.88}
+    - {name: New York,       lat:  40.71, lon:  -74.01}
+    - {name: Karachi,        lat:  24.86, lon:   67.01}
+    - {name: Buenos Aires,   lat: -34.60, lon:  -58.38}
+    - {name: Istanbul,       lat:  41.01, lon:   28.98}
+    - {name: Kolkata,        lat:  22.57, lon:   88.36}
+    - {name: Manila,         lat:  14.60, lon:  120.98}
+    - {name: Lagos,          lat:   6.52, lon:    3.38}
+    - {name: Rio de Janeiro, lat: -22.91, lon:  -43.17}
+    - {name: Moscow,         lat:  55.76, lon:   37.62}
+    - {name: Paris,          lat:  48.86, lon:    2.35}
+    - {name: London,         lat:  51.51, lon:   -0.13}
+    - {name: Jakarta,        lat:  -6.21, lon:  106.85}
+    - {name: Lima,           lat: -12.05, lon:  -77.04}
+    - {name: Bangkok,        lat:  13.76, lon:  100.50}
+    - {name: Seoul,          lat:  37.57, lon:  126.98}
+    - {name: Los Angeles,    lat:  34.05, lon: -118.24}
+    - {name: Tehran,         lat:  35.69, lon:   51.39}
+    - {name: Kinshasa,       lat:  -4.44, lon:   15.27}
+    - {name: Johannesburg,   lat: -26.20, lon:   28.05}
+    - {name: Sydney,         lat: -33.87, lon:  151.21}
+    - {name: Chicago,        lat:  41.88, lon:  -87.63}
+    - {name: Nairobi,        lat:  -1.29, lon:   36.82}
+    - {name: Singapore,      lat:   1.35, lon:  103.82}
+
+  # map.html field export (EXPLORER_STEPS.md E4). t2m only for now — see
+  # PLAN_EXPLORER.md §5a for why precipitation is deliberately not first.
+  # Start at 1.0 deg for fast iteration, then raise to 0.5.
+  map_variables: [t2m]
+  map_leads: [24, 48, 72, 96, 120]
+  map_resolution_deg: 1.0
+
 paths:
   data: data
   # GitHub Pages serves a branch's root or /docs only — hence "docs", not
