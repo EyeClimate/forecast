@@ -224,6 +224,32 @@ def _scoreboard_data(df: pd.DataFrame) -> dict:
     }
 
 
+def refresh_model_colors(site: Path, cfg: dict) -> list[Path]:
+    """Regenerate the `<style id="model-colors">` block on the secondary pages.
+
+    index.html gets its copy inside refresh_scoreboard, which also injects DATA.
+    The explorer pages have no inlined data — they only need the colours, and
+    they need them from the same source, or the same drift this replaced comes
+    back one page at a time.
+    """
+    done = []
+    for name in ("compare.html", "map.html"):
+        page = site / name
+        if not page.exists():
+            continue
+        html = page.read_text()
+        new, n = re.subn(r'<style id="model-colors">.*?</style>',
+                         lambda _: ('<style id="model-colors">\n'
+                                    + export.model_colors_css(cfg) + "</style>"),
+                         html, count=1, flags=re.S)
+        if n != 1:
+            raise RuntimeError(f'{name}: `<style id="model-colors">` block not found')
+        if new != html:
+            page.write_text(new)
+        done.append(page)
+    return done
+
+
 def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path,
                        cfg: dict | None = None) -> Path | None:
     """Rewrite DATA, the model registry, provenance, and timestamp in index.html."""
@@ -375,6 +401,8 @@ generated {stamp} · truth: ERA5 (WeatherBench2) · tier: final</p>
 
     refresh_scoreboard(df_full, mpath, site, cfg)
     print(f"[publish] models.json -> {export.write_models_json(cfg, site)}")
+    for page in refresh_model_colors(site, cfg):
+        print(f"[publish] model colours -> {page}")
     return out
 
 

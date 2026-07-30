@@ -1,0 +1,149 @@
+<title>Forecast Comparison — AI Weather Model Verification</title>
+<link rel="stylesheet" href="lib/css/site.css">
+<style id="model-colors">
+/* generated from config.yaml `display.models` by scoreboard/publish.py */
+:root {
+  --s-aurora: #2a78d6;
+  --s-fuxi: #008300;
+  --s-atlas: #e87ba4;
+  --s-ref: #848d9b;
+  --s-fengwu: #eda100;
+  --s-pangu6: #4a3aa7;
+  --s-sfno: #eb6834;
+  --s-fcn3: #1baf7a;
+  --s-graphcast: #b23bbf;
+  --s-aifs: #96751a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --s-aurora: #3987e5;
+    --s-fuxi: #008300;
+    --s-atlas: #d55181;
+    --s-ref: #7d8694;
+    --s-fengwu: #c98500;
+    --s-pangu6: #9085e9;
+    --s-sfno: #d95926;
+    --s-fcn3: #199e70;
+    --s-graphcast: #c46cd0;
+    --s-aifs: #a8892c;
+  }
+}
+:root[data-theme="dark"] {
+  --s-aurora: #3987e5;
+  --s-fuxi: #008300;
+  --s-atlas: #d55181;
+  --s-ref: #7d8694;
+  --s-fengwu: #c98500;
+  --s-pangu6: #9085e9;
+  --s-sfno: #d95926;
+  --s-fcn3: #199e70;
+  --s-graphcast: #c46cd0;
+  --s-aifs: #a8892c;
+}
+</style>
+<style>
+/* ---------- compare page ---------- */
+/* .pagenav lives in site.css — both pages use the same bar. */
+.controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; margin-bottom: 18px; }
+.ctl { display: flex; flex-direction: column; gap: 6px; }
+.ctl > label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.ctl select { font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink); min-width: 190px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs button, .chips button { font: inherit; font-size: 13px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+  padding: 6px 11px; border-radius: 8px; }
+.tabs button.on { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chips button { display: inline-flex; align-items: center; gap: 7px; }
+.chips button[aria-pressed="false"] { opacity: .45; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.swatch.dash { border-radius: 2px; height: 4px; width: 14px; }
+
+figure.chart { margin: 0 0 8px; }
+figure.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.axis-label { font-size: 11px; fill: var(--muted); }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.axisline { stroke: var(--baseline); stroke-width: 1; }
+.serieslabel { font-size: 11px; font-weight: 600; }
+
+.tip { position: fixed; z-index: 40; pointer-events: none; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+  padding: 9px 11px; font-size: 12.5px; color: var(--ink); min-width: 150px; display: none; }
+.tip h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.tip table { border-collapse: collapse; width: 100%; }
+.tip td { padding: 1px 0; }
+.tip td.v { text-align: right; padding-left: 14px; font-family: var(--mono); font-size: 12px; }
+.tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+.tablewrap { overflow-x: auto; }
+table.err { border-collapse: collapse; font-size: 13px; width: 100%; min-width: 560px; }
+table.err th, table.err td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+table.err th:first-child, table.err td:first-child { text-align: left; }
+table.err thead th { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+table.err td.num { font-family: var(--mono); }
+table.err tr.baseline td { color: var(--ink-2); font-style: italic; }
+
+.note { font-size: 13px; color: var(--ink-2); background: var(--accent-wash);
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; }
+.missing { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+.missing b { color: var(--ink-2); font-weight: 600; }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+</style>
+
+<nav class="pagenav">
+  <div class="wrap">
+    <a href="index.html">Leaderboard</a>
+    <a href="compare.html" class="on" aria-current="page">Compare a location</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Point comparison · one location, every model</p>
+    <h1>Forecast Comparison</h1>
+    <p class="lede">The leaderboard scores models over whole regions. This page does the
+    opposite — one city, one variable, every model's forecast drawn against the truth
+    it was scored on, so you can see <em>where</em> a model went wrong rather than only
+    by how much.</p>
+    <div class="provenance" id="prov"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <div class="controls">
+      <div class="ctl">
+        <label for="citysel">Location</label>
+        <select id="citysel"></select>
+      </div>
+      <div class="ctl">
+        <label for="initsel">Init time</label>
+        <select id="initsel"></select>
+      </div>
+      <div class="ctl">
+        <label>Variable</label>
+        <div class="tabs" id="vartabs" role="tablist"></div>
+      </div>
+    </div>
+
+    <div class="chips" id="modelchips"></div>
+    <div id="notes"></div>
+
+    <figure class="chart">
+      <svg id="chart" viewBox="0 0 900 400" role="img" aria-labelledby="charttitle"></svg>
+      <figcaption id="charttitle" class="axis-label" style="font-size:12.5px;padding-top:6px"></figcaption>
+    </figure>
+    <p class="missing" id="missing"></p>
+  </section>
+
+  <section>
+    <h2>Error vs truth</h2>
+    <p class="lede" style="font-size:14px" id="errintro"></p>
+    <div class="tablewrap"><table class="err" id="errtable"></table></div>
+  </section>
+</main>
+
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script src="lib/js/compare.js"></script>

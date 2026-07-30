@@ -400,3 +400,10 @@ footer {
   color: var(--muted);
 }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: space-between; }
+
+/* ---------- cross-page nav ---------- */
+.pagenav { border-bottom: 1px solid var(--border); background: var(--surface); }
+.pagenav .wrap { display: flex; gap: 22px; align-items: center; padding-top: 12px; padding-bottom: 12px; }
+.pagenav a { color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: 14px; }
+.pagenav a.on { color: var(--accent-ink); }
+.pagenav a:hover { color: var(--ink); }
