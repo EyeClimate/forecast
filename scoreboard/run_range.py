@@ -53,7 +53,7 @@ def main():
 
     from .forecast import forecast_path, load_model, run_forecast
     from .sweep import purge_forecast
-    from .verify import scored_rows, verify_forecast
+    from .verify import fully_scored, scored_rows, verify_forecast
 
     data_dir = Path(cfg["paths"]["data"])
     failures = []
@@ -69,9 +69,11 @@ def main():
         for init in inits:
             try:
                 # Skip keys off the metrics table, not the zarr: an init whose
-                # forecast was purged must not be re-forecast.
+                # forecast was purged must not be re-forecast. Real-time inits
+                # are scored incrementally, so rows alone aren't completion —
+                # only a fully scored init (final lead present) is skipped.
                 done = scored_rows(name, init, cfg)
-                if done and not args.rescore:
+                if done and not args.rescore and fully_scored(name, init, cfg):
                     print(f"[run] already scored ({done} rows), skipping "
                           f"{name} {init:%Y-%m-%dT%H}")
                     if args.purge_after_verify:
@@ -96,18 +98,10 @@ def main():
                         print(f"[run] loading model {name} (once)...")
                         model = load_model(name)
                     run_forecast(name, init, cfg, model=model)
-                try:
-                    verify_forecast(name, init, cfg, rescore=args.rescore)
-                except NotImplementedError as e:
-                    # Real-time inits: forecast now, score later when truth
-                    # arrives — no metrics rows, so a re-run retries verify
-                    # while the existing zarr makes the forecast step a no-op.
-                    print(f"[run] verification deferred for {name} "
-                          f"{init:%Y-%m-%dT%H}: {e}")
-                    continue
-                # purge_forecast re-checks the metrics table before deleting,
-                # so a failed/partial verify (which raises above) never purges.
-                if args.purge_after_verify:
+                verify_forecast(name, init, cfg, rescore=args.rescore)
+                # Purge only fully scored inits: a partially scored real-time
+                # zarr is still needed to score its remaining leads.
+                if args.purge_after_verify and fully_scored(name, init, cfg):
                     purge_forecast(name, init, cfg)
             except Exception as e:  # noqa: BLE001 — keep the range going
                 print(f"[run] FAILED {name} {init:%Y-%m-%dT%H}: {e}")

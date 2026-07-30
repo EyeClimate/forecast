@@ -46,10 +46,16 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
    short forecast (`GFS_FX` init t−6h at lead +6 h, i.e. APCP over (t−6h, t]).
    Variables GFS can neither serve nor synthesize (Atlas's `sst`, AIFS's
    `tcw`/soil fields) raise up front, so those models can't yet run in this
-   regime. Real-time **truth** (IMERG Late / GFS analysis at valid time) is
-   still unimplemented: `run_range` forecasts such inits, defers verification
-   (no metrics rows), and a later re-run picks them up once truth support
-   lands — the existing zarr makes the re-run's forecast step a no-op.
+   regime. Real-time **truth** is GFS analysis at each valid time
+   (`truth_source='gfs_analysis'`, `tier=provisional`; a later ERA5 re-score
+   upgrades to final). Verification is *incremental*: each run scores only
+   the leads whose valid time has truth (GFS analysis lands ~4 h after cycle
+   time; we use a 6 h cutoff) and that aren't already in the metrics table,
+   so the daily job progressively fills a 5-day forecast in over 5 days.
+   An init is "done" (skipped, purgeable) only once its final lead is scored.
+   Real-time **precipitation** truth (IMERG Late) is not implemented yet —
+   precip metrics are skipped for real-time inits; the synthesized GFS-
+   background `tp06` is a model input only, never verification truth.
 
 2. **Forecast** (`scoreboard/forecast.py`). Load the model once per range,
    run `earth2studio.run.deterministic` for 20 × 6 h steps, and store only

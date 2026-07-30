@@ -24,7 +24,7 @@ from pathlib import Path
 import yaml
 
 from .forecast import forecast_path
-from .verify import scored_rows
+from .verify import fully_scored, scored_rows
 
 
 def purge_forecast(model_name: str, init_time: datetime, cfg: dict,
@@ -41,6 +41,11 @@ def purge_forecast(model_name: str, init_time: datetime, cfg: dict,
     nrows = scored_rows(model_name, init_time, cfg)
     if nrows == 0:
         print(f"[purge] no metrics rows, keeping {zpath}")
+        return False
+    # Real-time inits score incrementally as truth arrives — a partially
+    # scored zarr is still needed for its remaining leads.
+    if not fully_scored(model_name, init_time, cfg):
+        print(f"[purge] not fully scored yet, keeping {zpath}")
         return False
     if dry_run:
         print(f"[purge] would delete {zpath} ({nrows} metric rows)")

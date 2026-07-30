@@ -5,7 +5,7 @@ Metrics table schema (one row per score):
   | init_source | truth_source | tier
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -36,6 +36,25 @@ def scored_rows(model_name: str, init_time: datetime, cfg: dict) -> int:
     df = pd.read_parquet(mpath, columns=["init_time", "model"])
     return int(((df.model == model_name)
                 & (df.init_time == pd.Timestamp(init_time))).sum())
+
+
+def scored_lead_hours(model_name: str, init_time: datetime, cfg: dict) -> set:
+    """Lead hours already scored for (model, init)."""
+    mpath = metrics_path(cfg)
+    if not mpath.exists():
+        return set()
+    df = pd.read_parquet(mpath, columns=["init_time", "model", "lead_hours"])
+    sel = (df.model == model_name) & (df.init_time == pd.Timestamp(init_time))
+    return {int(x) for x in df.lead_hours[sel].unique()}
+
+
+def fully_scored(model_name: str, init_time: datetime, cfg: dict) -> bool:
+    """True once the final lead is scored. Real-time inits are scored
+    incrementally as truth arrives, so mere row presence (scored_rows > 0)
+    doesn't mean verification is complete."""
+    return cfg["forecast"]["nsteps"] * 6 in scored_lead_hours(
+        model_name, init_time, cfg
+    )
 
 
 def _lat_weights(lat: np.ndarray) -> np.ndarray:
@@ -97,12 +116,7 @@ def verify_forecast(model_name: str, init_time: datetime, cfg: dict,
         raise FileNotFoundError(f"No forecast at {zpath}")
 
     mpath = metrics_path(cfg)
-    if not rescore:
-        done = scored_rows(model_name, init_time, cfg)
-        if done:
-            print(f"[verify] already scored ({done} rows), skipping "
-                  f"{model_name} {init_time:%Y-%m-%dT%H}")
-            return 0
+    already = set() if rescore else scored_lead_hours(model_name, init_time, cfg)
 
     vcfg = cfg["verification"]
     mcfg = cfg["models"][model_name]
@@ -120,6 +134,33 @@ def verify_forecast(model_name: str, init_time: datetime, cfg: dict,
     valid_times = [
         pd.Timestamp(np.datetime64(init_time) + lt).to_pydatetime() for lt in leads
     ]
+
+    realtime = sources.regime(init_time, cfg["historic_cutoff_days"]) == "realtime"
+    tier = "provisional" if realtime else "final"
+    avail_cutoff = None
+    if realtime:
+        # GFS analysis lands ~4 h after cycle time; leads past the cutoff are
+        # left unscored and picked up by later runs as their truth arrives.
+        avail_cutoff = (datetime.now(timezone.utc).replace(tzinfo=None)
+                        - timedelta(hours=6))
+        if precip_var:
+            print("[verify] real-time precip truth (IMERG Late) not "
+                  "implemented — skipping precip metrics for this init")
+            precip_var = None
+
+    todo = [
+        (lt, lh, vt) for lt, lh, vt in zip(leads, lead_hours, valid_times)
+        if int(lh) not in already
+        and (avail_cutoff is None or vt <= avail_cutoff)
+    ]
+    if not todo:
+        held = "truth not yet available for the rest" if realtime else "done"
+        print(f"[verify] nothing new to score for {model_name} "
+              f"{init_time:%Y-%m-%dT%H} ({len(already)} leads scored, {held})")
+        return 0
+    leads = np.array([lt for lt, _, _ in todo])
+    lead_hours = [lh for _, lh, _ in todo]
+    valid_times = [vt for _, _, vt in todo]
 
     truth, truth_label = sources.truth_source(
         init_time, valid_times[-1], cfg["historic_cutoff_days"]
@@ -156,7 +197,7 @@ def verify_forecast(model_name: str, init_time: datetime, cfg: dict,
             init_time=pd.Timestamp(init_time), model=model_name,
             lead_hours=int(lead_h), variable=var, region=region, metric=metric,
             value=value, init_source=init_source, truth_source=truth_label,
-            tier="final",
+            tier=tier,
         ))
 
     for i, (lt, lh, vt) in enumerate(zip(leads, lead_hours, valid_times)):

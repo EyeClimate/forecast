@@ -188,13 +188,18 @@ def init_source(init_time: datetime, cutoff_days: int = 6):
 
 
 def truth_source(init_time: datetime, last_valid_time: datetime, cutoff_days: int = 6):
-    """Returns (DataSource, label) providing verification truth."""
+    """Returns (DataSource, label) providing verification truth.
+
+    Real-time inits verify against GFS analysis at each valid time
+    (tier=provisional; a later historic re-score against ERA5 upgrades to
+    final). Precip truth (IMERG Late) is not implemented yet — verify.py
+    skips precip metrics for real-time inits, so tp06 is never requested
+    here (GFSInit would serve it from GFS's own +6 h background forecast,
+    which must not be used as verification truth).
+    """
     if regime(init_time, cutoff_days) == "historic":
         return ARCOInit(), "era5_arco"
-    raise NotImplementedError(
-        "Real-time truth (IMERG Late / GFS analysis at valid time) is not "
-        "implemented yet; this init will be scored once it is and truth arrives."
-    )
+    return GFSInit(), "gfs_analysis"
 
 
 def climatology_source():
