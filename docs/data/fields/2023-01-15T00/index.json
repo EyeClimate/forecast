@@ -1,0 +1,117 @@
+{
+ "schema_version": 1,
+ "init_time": "2023-01-15T00:00:00Z",
+ "generated": "2026-07-30T08:10:16Z",
+ "regime": "historic",
+ "tier": "final",
+ "init_source": "era5_arco",
+ "truth_source": "era5_arco",
+ "dir": "fields/2023-01-15T00",
+ "grid": {
+  "resolution_deg": 1.0,
+  "width": 360,
+  "height": 181,
+  "lat_start": 90.0,
+  "lat_step": -1.0,
+  "lon_start": 0.0,
+  "lon_step": 1.0
+ },
+ "encoding": {
+  "dtype": "uint8",
+  "missing": 0,
+  "min_byte": 1,
+  "max_byte": 255,
+  "levels": 254,
+  "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+ },
+ "leads": [
+  24,
+  48,
+  72,
+  96,
+  120
+ ],
+ "models": [
+  "atlas"
+ ],
+ "models_expected": [
+  "aurora",
+  "fuxi",
+  "atlas",
+  "persistence",
+  "fengwu",
+  "pangu6",
+  "sfno",
+  "fcn3",
+  "graphcast_oper",
+  "aifs"
+ ],
+ "variables": {
+  "t2m": {
+   "units": "K",
+   "forecast": {
+    "file": "f{lead}.png",
+    "scales": {
+     "24": [
+      212.607,
+      308.869
+     ],
+     "48": [
+      215.256,
+      312.808
+     ],
+     "72": [
+      215.279,
+      309.672
+     ],
+     "96": [
+      218.364,
+      307.62
+     ],
+     "120": [
+      219.624,
+      309.951
+     ]
+    }
+   },
+   "error": {
+    "file": "e{lead}.png",
+    "symmetric": true,
+    "definition": "model - truth",
+    "truth_source": "era5_arco",
+    "scales": {
+     "24": [
+      -6.971,
+      6.971
+     ],
+     "48": [
+      -11.038,
+      11.038
+     ],
+     "72": [
+      -20.263,
+      20.263
+     ],
+     "96": [
+      -17.267,
+      17.267
+     ],
+     "120": [
+      -22.429,
+      22.429
+     ]
+    },
+    "status": {
+     "24": "ok",
+     "48": "ok",
+     "72": "ok",
+     "96": "ok",
+     "120": "ok"
+    }
+   }
+  }
+ },
+ "png_count": 10,
+ "png_count_when_complete": 10,
+ "bytes": 280168
+}

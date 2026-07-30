@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manifest.schema.json",
+  "title": "Forecast explorer manifest",
+  "description": "docs/data/manifest.json — what the explorer pages may fetch and how to interpret it. This is the metadata endpoint of a static site: it never carries grid data, only what exists (inits, models, variables, leads, cities) and how to scale it (the `fields` section, filled by EXPLORER_STEPS.md E4). Written by scoreboard/export.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "generated", "series_statuses", "leads", "variables",
+    "cities", "inits", "fields"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated": { "$ref": "#/$defs/timestamp" },
+    "series_statuses": {
+      "description": "The status vocabulary a points series may carry, published so a page can assert it understands every value it might meet rather than silently ignoring a new one.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["ok", "no_variable", "truth_pending", "unavailable"] }
+    },
+    "leads": {
+      "description": "Union of lead hours over all listed inits.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 1 }
+    },
+    "variables": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/variableName" },
+      "additionalProperties": { "$ref": "#/$defs/variableMeta" }
+    },
+    "cities": {
+      "description": "config.yaml's display.cities, with the slug used as the points filename.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/city" }
+    },
+    "inits": {
+      "description": "One entry per init with exported data, oldest first. Independent of whether the forecast zarr still exists — sweep.py deletes those once scored, while the samples in data/points.parquet stay. An init whose forecasts were swept before verify.py began sampling cities has no point rows and is absent from this list entirely; that absence is permanent and deliberate, not a gap to be filled by narrowing the export.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/init" }
+    },
+    "fields": {
+      "description": "EXPLORER_STEPS.md E4's gridded field export, keyed by init stamp — the same object scoreboard/fields.py writes to docs/data/fields/<init>/index.json, aggregated from those sidecars so it always describes what is on disk. Empty object before any field export has run. A PNG's URL is <dir>/<model>/<variable>/<file with {lead} substituted>.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/initStamp" },
+      "additionalProperties": { "$ref": "#/$defs/fieldsInit" }
+    }
+  },
+  "$defs": {
+    "initStamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
+    },
+    "leadKey": { "type": "string", "pattern": "^[0-9]+$" },
+    "scale": {
+      "description": "[min, max] of the value range the 254 data bytes span. Error scales are symmetric: scale[0] == -scale[1] exactly, so a diverging colour ramp's neutral point lands on zero rather than near it.",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" }
+    },
+    "scaleMap": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/leadKey" },
+      "additionalProperties": { "$ref": "#/$defs/scale" }
+    },
+    "fieldsInit": {
+      "description": "One init's gridded export. Every field PNG in it shares one grid and one uint8 encoding; scales vary per variable, lead and kind, but not per model — two models at the same lead are quantized against the same range so a side-by-side comparison means the same thing in both panes.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "init_time", "generated", "regime", "tier",
+        "init_source", "truth_source", "dir", "grid", "encoding", "leads",
+        "models", "models_expected", "variables", "png_count",
+        "png_count_when_complete", "bytes"
+      ],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "init_time": { "$ref": "#/$defs/timestamp" },
+        "generated": { "$ref": "#/$defs/timestamp" },
+        "regime": { "enum": ["historic", "realtime"] },
+        "tier": { "$ref": "#/$defs/label" },
+        "init_source": { "$ref": "#/$defs/label" },
+        "truth_source": { "$ref": "#/$defs/label" },
+        "dir": {
+          "description": "Path relative to docs/data/.",
+          "type": "string",
+          "pattern": "^fields/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
+        },
+        "grid": {
+          "description": "Origin and step rather than only a bounding box: a latitude flip renders a completely convincing picture of the wrong hemisphere, and a renderer that reads a signed lat_step cannot guess the orientation wrong.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resolution_deg", "width", "height", "lat_start",
+                       "lat_step", "lon_start", "lon_step"],
+          "properties": {
+            "resolution_deg": { "type": "number", "exclusiveMinimum": 0 },
+            "width": { "type": "integer", "minimum": 2 },
+            "height": { "type": "integer", "minimum": 2 },
+            "lat_start": { "type": "number", "minimum": -90, "maximum": 90 },
+            "lat_step": { "type": "number" },
+            "lon_start": { "type": "number" },
+            "lon_step": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "encoding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dtype", "missing", "min_byte", "max_byte", "levels",
+                       "decode"],
+          "properties": {
+            "dtype": { "const": "uint8" },
+            "missing": {
+              "description": "The reserved no-data byte. Draw it transparent — it marks a lead whose truth has not landed and any cell where either side was non-finite, neither of which is the bottom of the colour ramp.",
+              "type": "integer", "minimum": 0, "maximum": 255
+            },
+            "min_byte": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "max_byte": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "levels": { "type": "integer", "minimum": 1, "maximum": 255 },
+            "decode": { "type": "string", "minLength": 1 }
+          }
+        },
+        "leads": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "models": {
+          "description": "Models with PNGs in this init — the map's model selector. Unlike a points file, a short list here is an accurate statement rather than a silently partial comparison: the map draws one model at a time, so it offers exactly what survives.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modelId" }
+        },
+        "models_expected": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modelId" }
+        },
+        "variables": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/variableName" },
+          "additionalProperties": { "$ref": "#/$defs/fieldVariable" }
+        },
+        "png_count": { "type": "integer", "minimum": 0 },
+        "png_count_when_complete": {
+          "description": "models x variables x leads x 2. png_count falls short of it by exactly the error fields whose truth has not landed yet; the two are equal once it has, and immediately for a historic init.",
+          "type": "integer", "minimum": 0
+        },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "fieldVariable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units", "forecast", "error"],
+      "properties": {
+        "units": { "type": "string" },
+        "forecast": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "scales"],
+          "properties": {
+            "file": { "type": "string", "minLength": 1 },
+            "scales": { "$ref": "#/$defs/scaleMap" }
+          }
+        },
+        "error": {
+          "description": "model - truth, differenced in float at native resolution before either side was quantized. Differencing two quantized forecast fields in the browser would carry ~0.55 K of encoding noise — the same order as the 24 h error being shown (PLAN_EXPLORER.md §4).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "symmetric", "definition", "truth_source",
+                       "scales", "status"],
+          "properties": {
+            "file": { "type": "string", "minLength": 1 },
+            "symmetric": { "const": true },
+            "definition": { "const": "model - truth" },
+            "truth_source": { "$ref": "#/$defs/label" },
+            "scales": { "$ref": "#/$defs/scaleMap" },
+            "status": {
+              "description": "Per lead: `ok` when an error PNG exists, `truth_pending` when the init is real-time and that lead's analysis has not landed. A pending lead has no PNG and no scale — a file of nothing but the missing byte would be bytes spent to say what this already says.",
+              "type": "object",
+              "propertyNames": { "$ref": "#/$defs/leadKey" },
+              "additionalProperties": { "enum": ["ok", "truth_pending"] }
+            }
+          }
+        }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+([+][a-z0-9_]+)*$"
+    },
+    "modelId": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "variableName": { "type": "string", "pattern": "^[a-z0-9]+$" },
+    "citySlug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "variableMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "units", "kind", "decimals"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "units": { "type": "string" },
+        "kind": {
+          "description": "`precip` variables are non-Gaussian and mostly zero — they render as accumulation bars, are scored categorically rather than by RMSE, and need a log scale as a raster (PLAN_EXPLORER.md §4).",
+          "enum": ["state", "precip"]
+        },
+        "decimals": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "accumulation_hours": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "city": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "lat", "lon"],
+      "properties": {
+        "id": { "$ref": "#/$defs/citySlug" },
+        "name": { "type": "string", "minLength": 1 },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "init": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "init_time", "regime", "tier", "init_source", "truth_source",
+        "truth_valid_through", "models", "models_expected", "leads",
+        "variables", "points"
+      ],
+      "properties": {
+        "init_time": { "$ref": "#/$defs/timestamp" },
+        "regime": { "enum": ["historic", "realtime"] },
+        "tier": { "$ref": "#/$defs/label" },
+        "init_source": { "$ref": "#/$defs/label" },
+        "truth_source": { "$ref": "#/$defs/label" },
+        "truth_valid_through": {
+          "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+        },
+        "models": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modelId" }
+        },
+        "models_expected": {
+          "description": "Every model this init should carry, from the points files. Equal to `models` in a complete export; a page that finds them different is looking at an init that lost models to a purged forecast.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modelId" }
+        },
+        "leads": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "variables": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/variableName" }
+        },
+        "points": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dir", "cities", "bytes"],
+          "properties": {
+            "dir": {
+              "description": "Path relative to docs/data/. A city file is <dir>/<city id>.json.",
+              "type": "string",
+              "pattern": "^points/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
+            },
+            "cities": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/citySlug" }
+            },
+            "bytes": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}

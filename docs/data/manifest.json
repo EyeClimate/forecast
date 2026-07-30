@@ -1,0 +1,603 @@
+{
+ "schema_version": 1,
+ "generated": "2026-07-30T08:24:13Z",
+ "series_statuses": [
+  "ok",
+  "no_variable",
+  "truth_pending",
+  "unavailable"
+ ],
+ "leads": [
+  6,
+  12,
+  18,
+  24,
+  30,
+  36,
+  42,
+  48,
+  54,
+  60,
+  66,
+  72,
+  78,
+  84,
+  90,
+  96,
+  102,
+  108,
+  114,
+  120
+ ],
+ "variables": {
+  "msl": {
+   "label": "Mean sea level pressure",
+   "units": "Pa",
+   "kind": "state",
+   "decimals": 1
+  },
+  "t2m": {
+   "label": "2 m temperature",
+   "units": "K",
+   "kind": "state",
+   "decimals": 2
+  },
+  "t850": {
+   "label": "850 hPa temperature",
+   "units": "K",
+   "kind": "state",
+   "decimals": 2
+  },
+  "u10m": {
+   "label": "10 m zonal wind",
+   "units": "m/s",
+   "kind": "state",
+   "decimals": 2
+  },
+  "v10m": {
+   "label": "10 m meridional wind",
+   "units": "m/s",
+   "kind": "state",
+   "decimals": 2
+  },
+  "z500": {
+   "label": "500 hPa geopotential",
+   "units": "m2/s2",
+   "kind": "state",
+   "decimals": 1
+  },
+  "tp06": {
+   "label": "Precipitation (6 h accumulation)",
+   "units": "mm/6h",
+   "kind": "precip",
+   "decimals": 3,
+   "accumulation_hours": 6
+  }
+ },
+ "cities": [
+  {
+   "id": "tokyo",
+   "name": "Tokyo",
+   "lat": 35.68,
+   "lon": 139.69
+  },
+  {
+   "id": "delhi",
+   "name": "Delhi",
+   "lat": 28.61,
+   "lon": 77.21
+  },
+  {
+   "id": "shanghai",
+   "name": "Shanghai",
+   "lat": 31.23,
+   "lon": 121.47
+  },
+  {
+   "id": "dhaka",
+   "name": "Dhaka",
+   "lat": 23.81,
+   "lon": 90.41
+  },
+  {
+   "id": "sao-paulo",
+   "name": "São Paulo",
+   "lat": -23.55,
+   "lon": -46.63
+  },
+  {
+   "id": "cairo",
+   "name": "Cairo",
+   "lat": 30.04,
+   "lon": 31.24
+  },
+  {
+   "id": "mexico-city",
+   "name": "Mexico City",
+   "lat": 19.43,
+   "lon": -99.13
+  },
+  {
+   "id": "beijing",
+   "name": "Beijing",
+   "lat": 39.9,
+   "lon": 116.41
+  },
+  {
+   "id": "mumbai",
+   "name": "Mumbai",
+   "lat": 19.08,
+   "lon": 72.88
+  },
+  {
+   "id": "new-york",
+   "name": "New York",
+   "lat": 40.71,
+   "lon": -74.01
+  },
+  {
+   "id": "karachi",
+   "name": "Karachi",
+   "lat": 24.86,
+   "lon": 67.01
+  },
+  {
+   "id": "buenos-aires",
+   "name": "Buenos Aires",
+   "lat": -34.6,
+   "lon": -58.38
+  },
+  {
+   "id": "istanbul",
+   "name": "Istanbul",
+   "lat": 41.01,
+   "lon": 28.98
+  },
+  {
+   "id": "kolkata",
+   "name": "Kolkata",
+   "lat": 22.57,
+   "lon": 88.36
+  },
+  {
+   "id": "manila",
+   "name": "Manila",
+   "lat": 14.6,
+   "lon": 120.98
+  },
+  {
+   "id": "lagos",
+   "name": "Lagos",
+   "lat": 6.52,
+   "lon": 3.38
+  },
+  {
+   "id": "rio-de-janeiro",
+   "name": "Rio de Janeiro",
+   "lat": -22.91,
+   "lon": -43.17
+  },
+  {
+   "id": "moscow",
+   "name": "Moscow",
+   "lat": 55.76,
+   "lon": 37.62
+  },
+  {
+   "id": "paris",
+   "name": "Paris",
+   "lat": 48.86,
+   "lon": 2.35
+  },
+  {
+   "id": "london",
+   "name": "London",
+   "lat": 51.51,
+   "lon": -0.13
+  },
+  {
+   "id": "jakarta",
+   "name": "Jakarta",
+   "lat": -6.21,
+   "lon": 106.85
+  },
+  {
+   "id": "lima",
+   "name": "Lima",
+   "lat": -12.05,
+   "lon": -77.04
+  },
+  {
+   "id": "bangkok",
+   "name": "Bangkok",
+   "lat": 13.76,
+   "lon": 100.5
+  },
+  {
+   "id": "seoul",
+   "name": "Seoul",
+   "lat": 37.57,
+   "lon": 126.98
+  },
+  {
+   "id": "los-angeles",
+   "name": "Los Angeles",
+   "lat": 34.05,
+   "lon": -118.24
+  },
+  {
+   "id": "tehran",
+   "name": "Tehran",
+   "lat": 35.69,
+   "lon": 51.39
+  },
+  {
+   "id": "kinshasa",
+   "name": "Kinshasa",
+   "lat": -4.44,
+   "lon": 15.27
+  },
+  {
+   "id": "johannesburg",
+   "name": "Johannesburg",
+   "lat": -26.2,
+   "lon": 28.05
+  },
+  {
+   "id": "sydney",
+   "name": "Sydney",
+   "lat": -33.87,
+   "lon": 151.21
+  },
+  {
+   "id": "chicago",
+   "name": "Chicago",
+   "lat": 41.88,
+   "lon": -87.63
+  },
+  {
+   "id": "nairobi",
+   "name": "Nairobi",
+   "lat": -1.29,
+   "lon": 36.82
+  },
+  {
+   "id": "singapore",
+   "name": "Singapore",
+   "lat": 1.35,
+   "lon": 103.82
+  }
+ ],
+ "inits": [
+  {
+   "init_time": "2026-07-28T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-07-30T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-07-28T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 391685
+   }
+  }
+ ],
+ "fields": {
+  "2023-01-15T00": {
+   "schema_version": 1,
+   "init_time": "2023-01-15T00:00:00Z",
+   "generated": "2026-07-30T08:10:16Z",
+   "regime": "historic",
+   "tier": "final",
+   "init_source": "era5_arco",
+   "truth_source": "era5_arco",
+   "dir": "fields/2023-01-15T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "atlas"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "atlas",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        212.607,
+        308.869
+       ],
+       "48": [
+        215.256,
+        312.808
+       ],
+       "72": [
+        215.279,
+        309.672
+       ],
+       "96": [
+        218.364,
+        307.62
+       ],
+       "120": [
+        219.624,
+        309.951
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "era5_arco",
+      "scales": {
+       "24": [
+        -6.971,
+        6.971
+       ],
+       "48": [
+        -11.038,
+        11.038
+       ],
+       "72": [
+        -20.263,
+        20.263
+       ],
+       "96": [
+        -17.267,
+        17.267
+       ],
+       "120": [
+        -22.429,
+        22.429
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "ok",
+       "120": "ok"
+      }
+     }
+    }
+   },
+   "png_count": 10,
+   "png_count_when_complete": 10,
+   "bytes": 280168
+  },
+  "2026-07-28T00": {
+   "schema_version": 1,
+   "init_time": "2026-07-28T00:00:00Z",
+   "generated": "2026-07-30T08:12:17Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-07-28T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        196.669,
+        316.945
+       ],
+       "48": [
+        199.381,
+        317.76
+       ],
+       "72": [
+        199.097,
+        319.006
+       ],
+       "96": [
+        194.45,
+        319.489
+       ],
+       "120": [
+        193.002,
+        319.67
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -20.781,
+        20.781
+       ],
+       "48": [
+        -25.988,
+        25.988
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 63,
+   "png_count_when_complete": 90,
+   "bytes": 1403582
+  }
+ }
+}

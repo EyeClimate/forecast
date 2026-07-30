@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "points.schema.json",
+  "title": "Forecast explorer — point time series for one city and one init",
+  "description": "docs/data/points/<init>/<city>.json, written by scoreboard/export.py (EXPLORER_STEPS.md E2). Every model's forecast and the verification truth, sampled bilinearly at one lat/lon, at every lead hour of one init. Values are in the units manifest.json gives for the variable; precipitation is canonicalized to tp06 in mm per 6 h accumulation regardless of what the model calls it natively.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "init_time", "regime", "tier", "init_source",
+    "truth_source", "truth_valid_through", "city", "leads", "valid_times",
+    "truth", "models_expected", "models"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "init_time": { "$ref": "#/$defs/timestamp" },
+    "regime": {
+      "description": "Which truth regime this init falls in, per config.yaml's historic_cutoff_days. Real-time inits verify against GFS analysis and have no precipitation truth at all.",
+      "enum": ["historic", "realtime"]
+    },
+    "tier": { "$ref": "#/$defs/label" },
+    "init_source": { "$ref": "#/$defs/label" },
+    "truth_source": { "$ref": "#/$defs/label" },
+    "truth_valid_through": {
+      "description": "Last valid time for which truth was available when this file was written, or null if none was. Beyond it an `ok` truth series carries nulls: the valid time is still in the future, which is a different fact from truth_pending.",
+      "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "city": { "$ref": "#/$defs/city" },
+    "leads": {
+      "description": "Lead hours, ascending. Every series in this file is aligned to these positions.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 1 }
+    },
+    "valid_times": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/timestamp" }
+    },
+    "truth": {
+      "description": "The verification reference, sampled the same way the forecasts are. Keyed by canonical variable.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/variableName" },
+      "additionalProperties": { "$ref": "#/$defs/series" }
+    },
+    "models_expected": {
+      "description": "Every model that should have point data for this init: those scored in metrics.parquet plus those present in data/points.parquet. `models` below must contain exactly these — point values are sampled by verify.py while the forecast zarr is open and cannot be recovered afterwards, so an init whose forecasts were swept before sampling existed can never be completed, and scoreboard/export.py omits it from the manifest rather than publishing a comparison that silently drops models.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/modelId" }
+    },
+    "models": {
+      "description": "Forecast series keyed by model id, then by canonical variable. Must cover exactly `models_expected`.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/modelId" },
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "propertyNames": { "$ref": "#/$defs/variableName" },
+        "additionalProperties": { "$ref": "#/$defs/series" }
+      }
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "label": {
+      "description": "A provenance token, or several joined by '+' when an init mixes them — the same reduction publish.py applies to the metrics table for the page's chips.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+([+][a-z0-9_]+)*$"
+    },
+    "modelId": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "variableName": { "type": "string", "pattern": "^[a-z0-9]+$" },
+    "citySlug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "city": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "lat", "lon"],
+      "properties": {
+        "id": { "$ref": "#/$defs/citySlug" },
+        "name": { "type": "string", "minLength": 1 },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "series": {
+      "description": "One variable for one model (or for truth). `status` says why a series is absent instead of leaving a consumer to guess from a null: `no_variable` means the model has no precip_variable in config.yaml and never will produce this variable; `truth_pending` means no truth source is implemented for this variable in this init's regime (real-time precip — IMERG Late); `unavailable` means the variable was declared in config but missing from the forecast store, a pipeline anomaly. These are deliberately NOT interchangeable, and none of them is representable as a null series.",
+      "type": "object",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["status", "values"],
+          "properties": {
+            "status": { "const": "ok" },
+            "native_variable": {
+              "description": "The model's own name for this variable, present only when it differs from the canonical key (atlas and persistence call 6 h precip `tp`, not `tp06`).",
+              "type": "string",
+              "pattern": "^[a-z0-9]+$"
+            },
+            "values": {
+              "description": "One entry per lead in `leads`. A null entry means no value at that lead — for truth, that the valid time is past truth_valid_through.",
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": ["number", "null"] }
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["status", "values"],
+          "properties": {
+            "status": { "enum": ["no_variable", "truth_pending", "unavailable"] },
+            "native_variable": { "type": "string", "pattern": "^[a-z0-9]+$" },
+            "values": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}

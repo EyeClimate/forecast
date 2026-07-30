@@ -94,6 +94,29 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
              | init_source | truth_source | tier
    ```
 
+   The same pass also samples `config.yaml`'s `display.cities` bilinearly out
+   of the forecast — every city, every lead, every scored variable — into a
+   second store, `data/points.parquet`, under its own lock and dedup:
+
+   ```
+   init_time | model | lead_hours | variable | city | lat | lon | value
+   ```
+
+   It lives here, and not in the exporter, because this is the only moment
+   both facts hold: the zarr is open, and it still exists. `metrics.parquet`
+   holds region aggregates, so a city time series cannot be reconstructed from
+   it, and the metrics written above are exactly what licenses retention to
+   delete the forecast. Sampling therefore runs **before** anything else in
+   `verify_forecast` can return, and a failure there is fatal — a re-run
+   recovers the metrics, nothing recovers the points. Values are stored as the
+   zarr holds them (precip in metres); unit presentation belongs to the
+   exporter. Inits already verified before this existed can still be captured
+   while their zarr survives:
+
+   ```bash
+   conda run -n earth2 python -m scoreboard.verify --backfill-points
+   ```
+
 4. **Publish** (`scoreboard/publish.py`). Writes two pages into `docs/`
    (named `docs/` because GitHub Pages serves only a branch root or `/docs`):
 
@@ -132,6 +155,136 @@ For each init time in the range, `scoreboard/run_range.py` drives four steps:
      24/72/120 h, RMSE and ACC lead-time curves, precip CSI/FSS panels, and
      a forecast-vs-truth precip map for the latest scored init. Regenerated
      each run and gitignored along with `docs/assets/`.
+
+## Explorer data export
+
+`scoreboard/export.py` writes what the explorer pages fetch, under `docs/data/`
+(committed, retention-bounded — unlike `docs/assets/`, which is generated and
+ignored):
+
+```bash
+conda run -n earth2 python -m scoreboard.export [--init YYYY-MM-DDTHH] [--force]
+```
+
+- **`models.json`** — `config.yaml`'s `display.models`, the one source of model
+  labels and colours for all three pages.
+- **`points/<init>/<city>.json`** — every model's forecast and the verification
+  truth at one lat/lon, at every lead. The forecast half is reshaped from
+  `data/points.parquet`; the truth half is fetched here, because ERA5 and GFS
+  analysis stay available long after the forecast zarr does not.
+- **`manifest.json`** — what exists and how to read it: inits, models, leads,
+  variables, cities, per-init regime/tier/provenance, and a `fields` section
+  reserved for the gridded export.
+
+Two behaviours are load-bearing rather than incidental:
+
+- **Real-time inits are topped up, not written once.** An init exported the day
+  it runs has GFS-analysis truth for only its first few leads; the rest lands
+  over the following five days. Every export re-visits the inits already on
+  disk and fills in the truth that has since arrived, mirroring verification's
+  own incremental discipline. Use `--now YYYY-MM-DDTHH` to rehearse that
+  without waiting a day.
+- **An init that cannot be made whole is omitted, loudly.** Point values only
+  ever existed while the forecast zarr did, so an init verified before sampling
+  was added — and swept since — can never be completed. The export prints which
+  models are missing and leaves the init out of `manifest.json` altogether,
+  rather than publishing a comparison that silently drops models.
+
+`docs/data/schema/` holds a JSON Schema for both file types, and the gate
+validates every emitted file against it:
+
+```bash
+conda run -n earth2 python scripts/check_export.py
+```
+
+It checks the schema, the semantics the schema cannot express (series lengths,
+valid times, **every** city agreeing with the manifest, truth as complete as the
+clock allows), the bilinear sampler against analytic latitude/longitude fields,
+and — so that a gate which accepted everything could not pass for a working one
+— itself, by feeding deliberately broken documents and corrupted trees through
+and requiring each to be rejected. It fails rather than skips when
+`data/metrics.parquet` is absent: the tier and source labels are exactly what
+the exporter guesses without it.
+
+## Gridded field export
+
+`scoreboard/fields.py` writes the global maps `docs/map.html` will draw, as
+quantized single-channel PNGs. **`t2m` only** — all ten models carry it, truth
+exists in both regimes, and uint8 quantization is benign, so the chain gets
+proven before precipitation's log scale and categorical error arrive
+(PLAN_EXPLORER.md §5a).
+
+```bash
+conda run -n earth2 python -m scoreboard.fields [--init YYYY-MM-DDTHH] [--latest]
+```
+
+For each init, model, and lead in `config.yaml`'s `display.map_leads`, `t2m` is
+regridded to `display.map_resolution_deg` and written to
+`docs/data/fields/<init>/<model>/t2m/` as `f<lead>.png` (forecast) and
+`e<lead>.png` (`model − truth`). `docs/data/fields/<init>/index.json` is the
+durable record of every scale and grid parameter; `manifest.json`'s `fields`
+section is aggregated from those sidecars by `export.write_manifest`, so the two
+exporters can run in either order and a points-only export cannot drop the
+field metadata.
+
+Four encoding decisions are load-bearing:
+
+- **The error field is differenced in float, at native 0.25°, before either side
+  is quantized.** uint8 across a 220–320 K range is ~0.39 K per level, so a page
+  that subtracted two quantized forecast fields would carry ~0.55 K of pure
+  encoding noise — the same order as the 24 h error it was trying to show
+  (PLAN_EXPLORER.md §4). Precomputing it here lets the error field spend all 254
+  levels on a ±10 K range instead of ±50 K; measured steps are 0.05–0.20 K
+  against 0.35–0.50 K for the forecast fields.
+- **Error scales are exactly symmetric about zero** — built by negating one
+  magnitude, so `scale[0] == -scale[1]` is an equality, not an approximation. A
+  diverging ramp whose neutral colour drifts off zero misrepresents the sign of
+  a bias.
+- **Byte 0 is reserved for missing** and published in the manifest as
+  `encoding.missing`; data occupies 1–255, giving 254 quantization intervals.
+  The renderer draws the reserved value transparent, so "no data" is never
+  painted as the bottom of the colour ramp.
+- **One scale per (variable, lead, kind), shared across models.** Per-model
+  scales would quantize each field a little more finely and would render the
+  same temperature as two different colours in a side-by-side comparison. For a
+  comparison site that trade is the wrong way round.
+
+A lead whose truth has not landed yet gets **no** error PNG and is marked
+`truth_pending` in the manifest, rather than a file containing nothing but the
+missing byte. And unlike the points export, **fields are re-exported, not topped
+up**: the fix for an init whose truth window has advanced is another full run,
+which is only possible while its forecast zarr survives `retention_days`. The
+gate insists on it.
+
+```bash
+conda run -n earth2 python scripts/check_fields.py
+```
+
+Its core is the decode gate: **every emitted PNG is decoded back to float
+through the scale `manifest.json` publishes, and the maximum absolute difference
+from the source array must be at most half the quantization step.** A scale that
+is stale, mistyped or attached to the wrong lead produces a perfectly plausible
+weather map of the wrong numbers, and inverting the encoding is the only way to
+notice. Source arrays are regenerated by calling `scoreboard.fields` itself, so
+the gate tests the pipeline rather than a second copy of it; an init whose zarr
+has been swept is reported as unverifiable, and the run **fails if no init could
+be verified at all**, so the gate cannot decay into a no-op as retention rolls
+forward. Around that sit the schema, the structural invariants above, a
+staleness check, and a self-test that corrupts a synthetic tree twenty-three
+ways and requires every one to be caught.
+
+Measured for one init, `t2m` only, five leads, forecast + error:
+
+| Resolution | Per PNG | Per model (all leads, both kinds) | 9 models |
+|---|---|---|---|
+| 1.0° (181×360) | 20 KiB forecast, 28 KiB error | 0.23 MiB | 2.0 MiB |
+| 0.5° (361×720) | 59–71 KiB forecast, 86–100 KiB error | 0.71–0.84 MiB | 6.4 MiB |
+
+PLAN_EXPLORER.md §4 estimated ~6 MB per init for single-variable 0.5° output
+over ~6 models; the same six models measure 4.3–5.0 MiB, so the plan's figure is
+right and slightly conservative. `config.yaml` stays at **1.0°** for now, per
+E4's "start at 1.0° for fast iteration" — raising it to 0.5° is a one-line
+change once `docs/map.html` exists, and needs the §7 repo-growth decision first.
 
 ## Daily automation
 
@@ -172,6 +325,15 @@ metrics append is all-or-nothing under the file lock, so missing rows mean a
 failed or unfinished verify and the zarr is still needed. Purged inits are
 not re-forecast — the pipeline's skip logic keys off the metrics table, not
 the zarr's existence.
+
+One consequence is permanent and worth stating plainly. Scores survive
+retention; **point values do not, unless they were sampled before the sweep.**
+Every init verified before `data/points.parquet` existed is unrecoverable for
+the explorer's purposes — 38 of the 39 scored inits at the time city sampling
+landed, including the historic January 2023 window, whose zarrs were purged
+with only `atlas`'s surviving. Those inits keep their place on the leaderboard
+and are simply absent from `manifest.json`. Point history accumulates from now
+on.
 
 ## Models
 
@@ -275,15 +437,18 @@ scoreboard/
   run_range.py           # entrypoint: forecast → verify → publish over a range
   sources.py             # regime-aware data source resolution + derived r/tp06
   forecast.py            # model loading (incl. Aurora precip chain), zarr output
-  verify.py              # metrics computation + locked parquet append
+  verify.py              # metrics + city point sampling, locked parquet appends
   sweep.py               # retention: delete scored forecast zarrs (cron)
   publish.py             # static site generation
   export.py              # docs/data/: models.json, manifest.json, points/**
+  fields.py              # docs/data/fields/: regrid -> quantize -> PNG (t2m)
 scripts/
   check_export.py        # gate for everything export.py writes
+  check_fields.py        # gate for the PNGs: decode back, assert <= half a step
 data/                    # gitignored
   forecasts/<model>/<init>.zarr
-  metrics.parquet
+  metrics.parquet         # region-aggregated scores
+  points.parquet          # city samples — perishable, captured during verify
 docs/                    # GitHub Pages root (branch: main, folder: /docs)
   index.html             # designed leaderboard page — the published site
   charts.html            # plain matplotlib page (gitignored)

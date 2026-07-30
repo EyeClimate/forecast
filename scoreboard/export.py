@@ -8,6 +8,11 @@ This module owns `models.json`, `manifest.json` and `points/<init>/<city>.json`
 (EXPLORER_STEPS.md E2). The gridded field export lands in `fields.py` (E4) and
 fills in the manifest's reserved `fields` section.
 
+**The forecast half of a points file comes from `data/points.parquet`, which
+verify.py writes while the zarr is open — never from the zarrs themselves.**
+See `read_points` and PLAN_EXPLORER.md §4a. The truth half is fetched here,
+because ERA5 and GFS analysis stay available while a zarr does not.
+
 `docs/data/schema/` carries a JSON Schema for each emitted file type, and
 `scripts/check_export.py` validates every file against it. That pairing is the
 whole point of freezing the contract here: E3's page and E4's exporter both code
@@ -26,7 +31,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from . import sources
 
@@ -312,29 +316,40 @@ def _round_series(values, decimals: int) -> list:
             for v in np.asarray(values, dtype=float).tolist()]
 
 
-def _forecast_inits(cfg: dict) -> dict[datetime, list[str]]:
-    """{init_time: [model, ...]} for every forecast zarr still on disk.
+POINT_COLUMNS = ["init_time", "model", "lead_hours", "variable", "city",
+                 "lat", "lon", "value"]
 
-    Point data is derived from the zarrs, but once written it stands alone — so
-    the exporter is driven by what is present now and never re-derives an init
-    it has already emitted. That matters because sweep.py deletes zarrs as soon
-    as their scores land; keying the manifest off the zarrs instead would make
-    committed point data vanish on the next sweep.
+
+def read_points(cfg: dict) -> pd.DataFrame:
+    """The durable city-sample store verify.py writes. Empty frame if absent.
+
+    **Not the forecast zarrs.** Reading zarrs here is the defect that made the
+    first attempt at this exporter emit a historic init containing one model of
+    ten: point values exist only while a zarr does, and sweep.py deletes them
+    the moment their scores land in metrics.parquet — which holds
+    region-aggregated skill, not fields, so nothing can be reconstructed from
+    it. Whatever verify.py captured is all there will ever be for a given init
+    (PLAN_EXPLORER.md §4a).
     """
-    root = Path(cfg["paths"]["data"]) / "forecasts"
+    from .verify import points_path
+
+    ppath = points_path(cfg)
+    if not ppath.exists():
+        print(f"[export] {ppath} does not exist yet — no init has been sampled. "
+              "Run the pipeline, or `python -m scoreboard.verify "
+              "--backfill-points` over any forecast zarrs still on disk.")
+        return pd.DataFrame(columns=POINT_COLUMNS)
+    return pd.read_parquet(ppath)
+
+
+def _point_inits(cfg: dict, df: pd.DataFrame) -> dict[datetime, list[str]]:
+    """{init_time: [model, ...]} present in the points store, in display order."""
     order = [m["id"] for m in models_payload(cfg)]
-    found: dict[datetime, list[str]] = {}
-    for zpath in sorted(root.glob("*/*.zarr")):
-        try:
-            init = datetime.strptime(zpath.stem, INIT_FMT)
-        except ValueError:
-            print(f"[export] unrecognized zarr name, skipping {zpath}")
-            continue
-        found.setdefault(init, []).append(zpath.parent.name)
-    return {
-        init: sorted(models, key=lambda m: (order.index(m) if m in order else 99, m))
-        for init, models in sorted(found.items())
-    }
+    out: dict[datetime, list[str]] = {}
+    for init, g in df.groupby("init_time"):
+        out[pd.Timestamp(init).to_pydatetime()] = sorted(
+            set(g.model), key=lambda m: (order.index(m) if m in order else 99, m))
+    return dict(sorted(out.items()))
 
 
 def canonical_variable(var: str) -> str:
@@ -343,51 +358,50 @@ def canonical_variable(var: str) -> str:
 
 
 def _model_series(cfg: dict, model: str, init_time: datetime,
-                  union_leads: list[int], cities: list[dict]) -> dict:
-    """Sample one model's forecast at every city. {canon_var: (status, array)}.
+                  union_leads: list[int], cities: list[dict],
+                  rows: pd.DataFrame) -> dict:
+    """Reshape one model's stored samples. {canon_var: (status, array, native)}.
 
-    `array` is (n_union_leads, n_cities) with NaN where the model has no such
-    lead; a status other than `ok` comes with None.
+    `rows` is points.parquet filtered to this (init, model). `array` is
+    (n_union_leads, n_cities) with NaN where the store has no such sample; a
+    status other than `ok` comes with None.
     """
-    from .forecast import forecast_path
-
-    zpath = forecast_path(Path(cfg["paths"]["data"]), model, init_time)
     mcfg = cfg["models"][model]
     precip_var = mcfg.get("precip_variable")
-    plat = np.array([c["lat"] for c in cities])
-    plon = np.array([c["lon"] for c in cities])
-
-    ds = xr.open_zarr(zpath, consolidated=False)
-    lead_td = ds["lead_time"].values
-    lead_td = lead_td[lead_td > np.timedelta64(0, "h")]
-    rows = [union_leads.index(int(lt / np.timedelta64(1, "h"))) for lt in lead_td]
+    lead_pos = {lh: i for i, lh in enumerate(union_leads)}
+    city_pos = {c["id"]: i for i, c in enumerate(cities)}
 
     out: dict[str, tuple] = {}
     for var in mcfg["scored_variables"]:
         canon = canonical_variable(var)
-        if var not in ds:
+        sub = rows[rows.variable == var]
+        if sub.empty:
+            # Declared in config but never sampled: the forecast is gone and
+            # the store has no record of it. Representable rather than fatal,
+            # so one bad variable cannot take the whole daily export down.
             print(f"[export] {model} {init_time:{INIT_FMT}}: {var} declared in "
-                  f"config but absent from {zpath.name}")
+                  "config but absent from points.parquet")
             out[canon] = (STATUS_UNAVAILABLE, None, var)
             continue
-        field = ds[var].isel(time=0).sel(lead_time=lead_td).values
+        li = sub.lead_hours.map(lead_pos)
+        ci = sub.city.map(city_pos)
+        keep = (li.notna() & ci.notna()).to_numpy()   # drops retired cities
+        values = sub.value.to_numpy(dtype=float)
         if var == precip_var:
-            field = np.clip(np.nan_to_num(field), 0.0, None) * 1000.0  # m -> mm
-        sampled = bilinear_sample(field, ds["lat"].values, ds["lon"].values,
-                                  plat, plon)
+            values = np.clip(np.nan_to_num(values), 0.0, None) * 1000.0  # m -> mm
         full = np.full((len(union_leads), len(cities)), np.nan)
-        full[rows] = sampled
+        full[li[keep].to_numpy(dtype=int), ci[keep].to_numpy(dtype=int)] = \
+            values[keep]
         out[canon] = (STATUS_OK, full, var)
     if precip_var is None:
         # Not "no data for this init" but "this model has no precipitation head".
         out[CANONICAL_PRECIP] = (STATUS_NO_VARIABLE, None, None)
-    ds.close()
     return out
 
 
 def _truth_series(cfg: dict, init_time: datetime, union_leads: list[int],
-                  state_vars: list[str], want_precip: bool,
-                  cities: list[dict]) -> tuple[dict, str, str | None]:
+                  state_vars: list[str], want_precip: bool, cities: list[dict],
+                  now: datetime | None = None) -> tuple[dict, str, str | None]:
     """Sample truth at every city. ({canon_var: (status, array)}, label, through).
 
     Mirrors verify.py exactly on both truth questions: which source serves this
@@ -401,7 +415,7 @@ def _truth_series(cfg: dict, init_time: datetime, union_leads: list[int],
     realtime = regime == "realtime"
     valid_times = [init_time + timedelta(hours=h) for h in union_leads]
 
-    through_dt = truth_available_through(init_time, union_leads, regime)
+    through_dt = truth_available_through(init_time, union_leads, regime, now)
     avail = [vt for vt in valid_times if through_dt and vt <= through_dt]
     through = f"{through_dt:{TIME_FMT}}" if through_dt else None
 
@@ -480,55 +494,75 @@ def scored_models(cfg: dict, init_time: datetime) -> list[str]:
     return sorted(set(df.model[df.init_time == pd.Timestamp(init_time)]))
 
 
-def expected_models(cfg: dict, init_time: datetime, on_disk: list[str]) -> list[str]:
+def expected_models(cfg: dict, init_time: datetime, sampled: list[str]) -> list[str]:
     """Every model this init ought to have point data for, in display order.
 
-    The union of "scored in metrics.parquet" and "forecast zarr still on disk",
-    because either alone understates it: sweep.py deletes a zarr as soon as its
-    scores land, and a forecast that has run but not been verified yet has no
-    metrics rows. Point values can only come from the zarr — the metrics table
-    holds aggregate skill, not the field — so an init whose zarrs are already
-    partly purged can never be exported whole, and export_explorer_data refuses
-    to publish it rather than emitting a silently partial comparison.
+    The union of "scored in metrics.parquet" and "present in points.parquet",
+    because either alone understates it: a forecast that has run and been
+    sampled but not verified yet has no metrics rows, and every init verified
+    before E2 existed has metrics but no samples. metrics.parquet is the
+    leaderboard's own record of which models ran, so it is the authority on
+    what a complete comparison looks like — and an init the points store cannot
+    match is one whose zarrs sweep.py already deleted. Those are unrecoverable,
+    so export_explorer_data omits the init entirely rather than publishing a
+    comparison that silently drops models.
     """
     order = [m["id"] for m in models_payload(cfg)]
-    both = set(on_disk) | set(scored_models(cfg, init_time))
+    both = set(sampled) | set(scored_models(cfg, init_time))
     return sorted(both, key=lambda m: (order.index(m) if m in order else 99, m))
 
 
-def export_points_for_init(cfg: dict, site: Path, init_time: datetime,
-                           models: list[str],
-                           expected: list[str] | None = None) -> Path:
-    """Write docs/data/points/<init>/<city>.json for every configured city."""
-    from .forecast import forecast_path
+def _check_city_coords(cfg: dict, init_time: datetime, rows: pd.DataFrame,
+                       cities: list[dict]) -> None:
+    """The store's sampling location must still be the configured one.
 
+    Editing a city's lat/lon in config.yaml does not move samples that were
+    already taken. Emitting them under the new coordinates would put a
+    plausible number at the wrong place — the one failure mode a chart cannot
+    reveal — so it is refused instead.
+    """
+    want = {c["id"]: (c["lat"], c["lon"]) for c in cities}
+    for cid, g in rows.groupby("city"):
+        if cid not in want:
+            continue          # a city dropped from config; simply not emitted
+        lat, lon = want[cid]
+        if (abs(g.lat - lat) > 1e-6).any() or (abs(g.lon - lon) > 1e-6).any():
+            raise RuntimeError(
+                f"{init_time:{INIT_FMT}}: {cid} was sampled at "
+                f"({g.lat.iloc[0]}, {g.lon.iloc[0]}) but config.yaml now says "
+                f"({lat}, {lon}). Re-sample the affected inits with "
+                "`python -m scoreboard.verify --backfill-points --resample` "
+                "(only inits whose forecast zarr survives can be re-sampled).")
+
+
+def export_points_for_init(cfg: dict, site: Path, init_time: datetime,
+                           models: list[str], rows: pd.DataFrame,
+                           expected: list[str] | None = None,
+                           now: datetime | None = None) -> Path:
+    """Write docs/data/points/<init>/<city>.json for every configured city.
+
+    `rows` is points.parquet filtered to this init. Truth is fetched here
+    rather than stored alongside: ERA5 and GFS analysis remain available
+    indefinitely, so only the forecast side needed capturing.
+    """
     cities = cities_payload(cfg)
     expected = expected if expected is not None else list(models)
+    _check_city_coords(cfg, init_time, rows, cities)
     # Only fetch truth for variables some model here actually forecasts —
     # a truth series nothing can be compared against is a wasted download.
     scored = {v for m in models for v in cfg["models"][m]["scored_variables"]}
     state_vars = [v for v in cfg["verification"]["state_variables"] if v in scored]
 
-    union_leads: set[int] = set()
-    for model in models:
-        ds = xr.open_zarr(
-            forecast_path(Path(cfg["paths"]["data"]), model, init_time),
-            consolidated=False)
-        lt = ds["lead_time"].values
-        union_leads |= {int(x / np.timedelta64(1, "h")) for x in lt
-                        if x > np.timedelta64(0, "h")}
-        ds.close()
-    leads = sorted(union_leads)
+    leads = sorted({int(x) for x in rows.lead_hours.unique()})
 
     per_model = {}
     for model in models:
-        print(f"[export] sampling {model} {init_time:{INIT_FMT}} at "
-              f"{len(cities)} cities ...")
-        per_model[model] = _model_series(cfg, model, init_time, leads, cities)
+        per_model[model] = _model_series(cfg, model, init_time, leads, cities,
+                                         rows[rows.model == model])
 
     want_precip = any(cfg["models"][m].get("precip_variable") for m in models)
     truth, truth_label, truth_through = _truth_series(
-        cfg, init_time, leads, state_vars, want_precip, cities)
+        cfg, init_time, leads, state_vars, want_precip, cities, now)
 
     prov = _provenance(cfg, init_time, models)
     if not prov["from_metrics"]:
@@ -730,8 +764,13 @@ def write_manifest(cfg: dict, site: Path) -> Path:
 
     This is the metadata endpoint of the static design (PLAN_EXPLORER.md §10):
     it says what exists and how to scale it, and the pages fetch the payloads
-    themselves. `fields` is reserved for E4 and empty until then.
+    themselves. The `fields` section is aggregated from the per-init sidecars
+    fields.py writes, not carried over from the previous manifest, so this
+    function stays a pure description of what is on disk however the two
+    exporters are interleaved.
     """
+    from . import fields as fields_mod
+
     root = site / "data"
     order = [m["id"] for m in models_payload(cfg)]
     inits = [e for e in (_read_init_dir(d)
@@ -761,14 +800,16 @@ def write_manifest(cfg: dict, site: Path) -> Path:
         },
         "cities": cities_payload(cfg),
         "inits": inits,
-        # Reserved for E4: {init: {model: {var: {lead: {scale, missing}}}}}.
-        "fields": {},
+        # E4's gridded export: {init: {grid, encoding, models, variables ->
+        # per-lead PNG scales}}. Empty until fields.py has run.
+        "fields": fields_mod.fields_section(cfg, site),
     }
     out = root / "manifest.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=1, ensure_ascii=False) + "\n")
     print(f"[export] manifest -> {out} ({len(inits)} inits, "
-          f"{len(payload['variables'])} variables)")
+          f"{len(payload['variables'])} variables, "
+          f"{len(payload['fields'])} field init(s))")
     return out
 
 
@@ -797,27 +838,29 @@ def prune_points(cfg: dict, site: Path, dry_run: bool = False) -> int:
 
 
 def export_explorer_data(cfg: dict, inits: list[datetime] | None = None,
-                         force: bool = False, prune: bool = True) -> Path:
+                         force: bool = False, prune: bool = True,
+                         now: datetime | None = None) -> Path:
     """models.json + points/** + manifest.json. Returns the manifest path."""
     site = Path(cfg["paths"]["site"])
     print(f"[export] models.json -> {write_models_json(cfg, site)}")
 
     points_root = site / "data" / "points"
     exported = {d.name for d in points_root.glob("*") if d.is_dir()}
-    available = _forecast_inits(cfg)
+    store = read_points(cfg)
+    available = _point_inits(cfg, store)
     if inits is None:
         todo = available
         topup = sorted(exported)
     else:
-        # An init with no zarr left is still a legitimate target: its truth can
-        # be completed from the emitted files alone.
+        # An init absent from the points store is still a legitimate target:
+        # its truth can be completed from the emitted files alone.
         unknown = [i for i in inits
                    if i not in available and f"{i:{INIT_FMT}}" not in exported]
         if unknown:
             raise SystemExit(
-                "[export] no forecast zarr and no exported points for "
+                "[export] no sampled points and no exported files for "
                 + ", ".join(f"{i:{INIT_FMT}}" for i in unknown)
-                + " — available: "
+                + " — sampled: "
                 + (", ".join(f"{i:{INIT_FMT}}" for i in available) or "none")
             )
         todo = {i: available[i] for i in inits if i in available}
@@ -828,30 +871,35 @@ def export_explorer_data(cfg: dict, inits: list[datetime] | None = None,
         gone = [m for m in expected if m not in models]
         if gone:
             # Never write point data for an init that cannot be made whole —
-            # not even under --force, which would otherwise overwrite a
-            # complete export with a degraded one after a sweep.
+            # not even under --force. There is no repair for this: the models
+            # are missing because their forecasts were swept before verify.py
+            # sampled cities, and metrics.parquet holds region aggregates, not
+            # point values. Publishing anyway would show a comparison of
+            # whatever survived with nothing on the page to say so, which is
+            # the defect this exporter was rewritten to remove — so the init is
+            # omitted from the manifest, loudly, and stays omitted.
             print(
-                f"[export] NOT exporting {init:{INIT_FMT}} from the zarrs: "
-                f"metrics.parquet scored {len(expected)} models for it but only "
-                f"{len(models)} still have a forecast zarr — "
-                f"{', '.join(gone)} were purged by sweep.py, and point values "
-                "live in the zarr, not the metrics table. A partial init would "
-                "publish a comparison that silently drops models. To include "
-                "it, re-run those forecasts (`python -m scoreboard.forecast "
-                f"--model <m> --init {init:{INIT_FMT}}`) and export again.")
+                f"[export] NOT exporting {init:{INIT_FMT}}: metrics.parquet "
+                f"scored {len(expected)} models for it but points.parquet has "
+                f"only {len(models)} — no samples were ever taken for "
+                f"{', '.join(gone)}, and their forecast zarrs are gone. This "
+                "init is permanently incomplete and is omitted from "
+                "manifest.json.")
             continue
         _, docs = _city_docs(outdir) if outdir.is_dir() else ([], [])
         if docs and not force:
-            # An already-exported init is not re-derived — its point data stands
-            # alone once written, and the zarrs it came from may be gone. The
-            # one exception is a model that finished after the export ran: all
-            # zarrs are still present, so folding it in loses nothing.
+            # Re-deriving is cheap and safe now that the samples are durable,
+            # but it costs a full truth fetch — so it happens only when the
+            # model set has actually changed. Everything else an already-
+            # exported init needs is the truth top-up below.
             new = sorted(set(models) - set(docs[0]["models"]))
             if not new:
                 continue
             print(f"[export] {init:{INIT_FMT}}: {', '.join(new)} appeared since "
-                  "the last export — re-deriving this init from the zarrs")
-        export_points_for_init(cfg, site, init, models, expected)
+                  "the last export — re-deriving this init from points.parquet")
+        export_points_for_init(cfg, site, init, models,
+                               store[store.init_time == pd.Timestamp(init)],
+                               expected, now)
 
     # Truth arrives after the forecast does, so completing it is a separate pass
     # over everything already on disk — including inits whose zarrs are long
@@ -862,7 +910,7 @@ def export_explorer_data(cfg: dict, inits: list[datetime] | None = None,
         if not outdir.is_dir():
             continue
         try:
-            topup_truth_for_init(cfg, outdir)
+            topup_truth_for_init(cfg, outdir, now)
         except Exception as e:  # noqa: BLE001 — one bad init must not block the rest
             print(f"[export] FAILED to complete truth for {outdir.name}: {e}")
             failed.append(outdir.name)
@@ -880,7 +928,7 @@ def export_explorer_data(cfg: dict, inits: list[datetime] | None = None,
 
 
 def main():
-    """`python -m scoreboard.export` — regenerate docs/data/ from the zarrs."""
+    """`python -m scoreboard.export` — regenerate docs/data/ from points.parquet."""
     import argparse
 
     import yaml
@@ -889,16 +937,24 @@ def main():
         description="Write docs/data/{models,manifest}.json and points/**")
     p.add_argument("--config", default="config.yaml")
     p.add_argument("--init", nargs="*", default=None, metavar="YYYY-MM-DDTHH",
-                   help="only these inits (default: every forecast zarr on disk)")
+                   help="only these inits (default: every sampled init)")
     p.add_argument("--force", action="store_true",
                    help="re-export inits whose points directory already exists")
     p.add_argument("--no-prune", action="store_true",
                    help="keep point directories past retention_days")
+    # The truth window advances a lead every 6 h, so the incremental top-up is
+    # otherwise only observable by waiting a day. Pinning the clock makes it a
+    # thing you can run twice in a minute and watch complete.
+    p.add_argument("--now", default=None, metavar="YYYY-MM-DDTHH",
+                   help="pretend it is this UTC time when deciding which "
+                        "truth valid times exist yet (testing/rehearsal)")
     a = p.parse_args()
     cfg = yaml.safe_load(Path(a.config).read_text())
     inits = ([datetime.strptime(s, INIT_FMT) for s in a.init]
              if a.init else None)
-    export_explorer_data(cfg, inits, force=a.force, prune=not a.no_prune)
+    now = datetime.strptime(a.now, INIT_FMT) if a.now else None
+    export_explorer_data(cfg, inits, force=a.force, prune=not a.no_prune,
+                         now=now)
 
 
 if __name__ == "__main__":

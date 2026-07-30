@@ -29,10 +29,25 @@ rc=$?
 
 "$CONDA" run -n earth2 python -m scoreboard.sweep
 
+# Publish. The commit lands on whatever branch is checked out, so pushing a
+# hardcoded `main` is only correct when main IS checked out — otherwise the
+# commit strands on a feature branch while `git push origin main` pushes an
+# unchanged ref, succeeds, and logs "pushed". That silent no-op cost a day of
+# scores on 2026-07-30. Push the branch we actually committed to, and say which.
 if ! git diff --quiet docs/index.html; then
+    branch=$(git rev-parse --abbrev-ref HEAD)
     git add docs/index.html
     git commit --quiet -m "daily: refresh scoreboard $(date -u +%F)"
-    git push --quiet origin main && echo "pushed docs/index.html"
+    if [ "$branch" = "main" ]; then
+        git push --quiet origin main && echo "pushed docs/index.html (main)"
+    else
+        # Still push, so the site never silently goes stale, but make the
+        # unusual situation impossible to miss in the log.
+        echo "WARNING: on branch '$branch', not main — pushing $branch -> main"
+        git push --quiet origin "HEAD:main" \
+            && echo "pushed docs/index.html ($branch -> main)" \
+            || echo "ERROR: push failed; docs/index.html is committed on '$branch' but NOT live"
+    fi
 fi
 
 echo "=== done rc=$rc $(date -u +%FT%TZ) ==="
