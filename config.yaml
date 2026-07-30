@@ -1,0 +1,65 @@
+# Forecast Scoreboard configuration
+
+# Model registry. `scored_variables` are the only variables stored + verified.
+# Optional `conda_env`: run this model's forecast step in another conda env
+# (run_range shells out via `conda run`); verification always stays in the
+# orchestrator's env — it only reads zarr.
+models:
+  atlas:
+    scored_variables: [tp, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp
+  fuxi:
+    scored_variables: [tp06, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp06
+  aurora:  # precip via chained diagnostics: derived sp/tcwv -> PrecipitationAFNOv2
+    scored_variables: [tp06, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp06
+  graphcast_oper:  # JAX-based, conflicts with the torch/ONNX stack
+    scored_variables: [tp06, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp06
+    conda_env: e2s-graphcast
+  aifs:  # anemoi + flash-attn
+    scored_variables: [tp06, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp06
+    conda_env: e2s-aifs
+  persistence:  # pipeline testing only — no skill, no GPU
+    scored_variables: [tp, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp
+  fengwu:  # no native precip
+    scored_variables: [t2m, u10m, v10m, z500, t850, msl]
+  pangu6:  # precip via the same chained diagnostics as aurora
+    scored_variables: [tp06, t2m, u10m, v10m, z500, t850, msl]
+    precip_variable: tp06
+  sfno:  # no native precip
+    scored_variables: [t2m, u10m, v10m, z500, t850, msl]
+  fcn3:  # no native precip; deterministic single member
+    scored_variables: [t2m, u10m, v10m, z500, t850, msl]
+
+forecast:
+  nsteps: 20            # 20 x 6h = 5 days
+
+verification:
+  state_variables: [t2m, u10m, v10m, z500, t850, msl]
+  precip_thresholds_mm: [1.0, 5.0, 10.0]   # per 6 h accumulation
+  fss_window_cells: 9                       # 9 x 0.25 deg ~ 250 km neighborhood
+  compute_acc: true                         # needs WB2 climatology download
+  regions:
+    global: [-90.0, 90.0]
+    nh_extratropics: [20.0, 90.0]
+    tropics: [-20.0, 20.0]
+    sh_extratropics: [-90.0, -20.0]
+
+# scoreboard/sweep.py deletes forecast zarrs whose files are older than this
+# (by mtime) and whose scores are already in metrics.parquet.
+retention_days: 30
+
+# Init times older than this are the "historic" regime (ERA5 init + truth).
+# Younger inits are "real-time" (GFS/IMERG) — not implemented until Phase 2.
+historic_cutoff_days: 6
+
+paths:
+  data: data
+  # GitHub Pages serves a branch's root or /docs only — hence "docs", not
+  # "site". docs/index.html is the designed page; docs/charts.html is the
+  # plain matplotlib one.
+  site: docs
