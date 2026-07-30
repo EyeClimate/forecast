@@ -149,9 +149,24 @@ def _scorecard(df) -> str:
 # "scores generated ..." timestamp. All other bytes are left untouched —
 # markup, styles, scripts, and the MODELS color registry are hand-maintained.
 
+SOURCE_LABELS = {
+    "era5_arco": "ERA5 (ARCO)",
+    "gfs": "GFS",
+    "gfs_analysis": "GFS analysis",
+    "imerg_late": "IMERG Late",
+}
+
+
 def _uniq_label(series) -> str:
     vals = sorted(series.unique())
     return vals[0] if len(vals) == 1 else "+".join(vals)
+
+
+def _pretty_label(raw: str) -> str:
+    """Display form of a DATA metadata label: 'era5_arco+gfs' -> 'ERA5 (ARCO)
+    + GFS', 'final+provisional' -> 'FINAL + PROVISIONAL'."""
+    return " + ".join(SOURCE_LABELS.get(p, p.replace("_", " ").upper())
+                      for p in raw.split("+"))
 
 
 def _init_range_label(inits: list) -> str:
@@ -224,17 +239,18 @@ def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path) -> Path | None
     if missing:
         print("!" * 74)
         print(f"[publish] WARNING: {missing} in metrics.parquet but NOT in "
-              f"scoreboard.html MODELS — embedded in DATA yet invisible on the "
-              f"page. Assign colors manually (next free slot: yellow "
+              f"{page.name}'s MODELS array — embedded in DATA yet invisible on "
+              f"the page. Assign colors manually (next free slot: yellow "
               f"#eda100/#c98500).")
         print("!" * 74)
 
-    blob = json.dumps(_scoreboard_data(df), separators=(",", ": "))
+    payload = _scoreboard_data(df)
+    blob = json.dumps(payload, separators=(",", ": "))
     html, n = re.subn(r"const DATA = \{.*?\};",
                       lambda _: f"const DATA = {blob};", html,
                       count=1, flags=re.S)
     if n != 1:
-        raise RuntimeError("scoreboard.html: `const DATA = {...};` not found")
+        raise RuntimeError(f"{page.name}: `const DATA = {{...}};` not found")
 
     n_inits = df.init_time.nunique()
     hours = sorted({pd.Timestamp(t).hour for t in df.init_time.unique()})
@@ -244,14 +260,25 @@ def refresh_scoreboard(df: pd.DataFrame, mpath: Path, site: Path) -> Path | None
     html, n = re.subn(r"<span>inits <b>.*?</b> · .*?</span>",
                       lambda _: prov, html, count=1)
     if n != 1:
-        raise RuntimeError("scoreboard.html: provenance 'inits' span not found")
+        raise RuntimeError(f"{page.name}: provenance 'inits' span not found")
+
+    # The source/tier chips must track the table too. Once a range mixes
+    # regimes (ERA5 historic + GFS real-time) a hardcoded chip would keep
+    # claiming all-ERA5 / all-FINAL, which is simply false.
+    for field, key in (("init source", "init_source"), ("truth", "truth"),
+                       ("tier", "tier")):
+        chip = f"<span>{field} <b>{_pretty_label(payload[key])}</b></span>"
+        html, n = re.subn(rf"<span>{field} <b>.*?</b></span>",
+                          lambda _, c=chip: c, html, count=1)
+        if n != 1:
+            raise RuntimeError(f"{page.name}: '{field}' chip span not found")
 
     stamp = datetime.fromtimestamp(
         mpath.stat().st_mtime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     html, n = re.subn(r"scores generated .*? UTC",
                       f"scores generated {stamp}", html, count=1)
     if n != 1:
-        raise RuntimeError("scoreboard.html: 'scores generated' stamp not found")
+        raise RuntimeError(f"{page.name}: 'scores generated' stamp not found")
 
     page.write_text(html)
     print(f"[publish] designed page -> {page} ({n_inits} inits, {stamp})")
