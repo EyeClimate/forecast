@@ -35,11 +35,12 @@
   },
   {
     "id": "fengwu",
-    "label": "FengWu",
+    "label": "EyeClimate",
     "css_var": "--s-fengwu",
     "color": "#eda100",
     "color_dark": "#c98500",
-    "width": 2
+    "width": 2,
+    "short": "EyeClim."
   },
   {
     "id": "pangu6",

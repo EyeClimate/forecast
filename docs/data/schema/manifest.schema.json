@@ -64,7 +64,7 @@
    }
   },
   "map": {
-   "description": "config.yaml's display.map: the viewport limits map.html uses and the optional street basemaps it may switch on. Basemaps are WMS, not {z}/{x}/{y}, because the map's CRS is EPSG:4326 and CDN raster tiles are all pre-rendered in Web Mercator.",
+   "description": "config.yaml's display.map: the viewport limits map.html uses, the optional street basemaps it may switch on, and which of them (if any) is on by default. Basemaps are WMS, not {z}/{x}/{y}, because the map's CRS is EPSG:4326 and CDN raster tiles are all pre-rendered in Web Mercator.",
    "type": "object",
    "additionalProperties": false,
    "required": [
@@ -79,6 +79,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 18
+    },
+    "default_basemap": {
+     "description": "Id of the basemap that is on from the first paint at every zoom, until the reader picks another (their choice is remembered and wins). Null: the map opens clean and switches a basemap on only past `basemap_zoom`.",
+     "type": [
+      "string",
+      "null"
+     ]
     },
     "basemap_zoom": {
      "description": "Zoom at and above which the basemap switches itself on, until the reader picks one explicitly.",
@@ -324,7 +331,7 @@
      "minimum": 0
     },
     "png_count_when_complete": {
-     "description": "models x variables x leads x 2. png_count falls short of it by exactly the error fields whose truth has not landed yet; the two are equal once it has, and immediately for a historic init.",
+     "description": "Sum over variables of that variable's models x leads x 2. png_count falls short of it by exactly the error fields whose truth has not landed yet; the two are equal once it has — immediately for a historic init, and never for real-time precipitation until IMERG Late truth exists.",
      "type": "integer",
      "minimum": 0
     },
@@ -345,6 +352,14 @@
    "properties": {
     "units": {
      "type": "string"
+    },
+    "models": {
+     "description": "The subset of the init's `models` whose forecast carries this variable — three of the daily models have no precipitation head. Absent (sidecars written before precipitation) means every model. The page greys the others out and the gate counts only these.",
+     "type": "array",
+     "uniqueItems": true,
+     "items": {
+      "$ref": "#/$defs/modelId"
+     }
     },
     "forecast": {
      "type": "object",
@@ -393,7 +408,7 @@
        "$ref": "#/$defs/scaleMap"
       },
       "status": {
-       "description": "Per lead: `ok` when an error PNG exists, `truth_pending` when the init is real-time and that lead's analysis has not landed. A pending lead has no PNG and no scale — a file of nothing but the missing byte would be bytes spent to say what this already says.",
+       "description": "Per lead: `ok` when an error PNG exists, `truth_pending` when the init is real-time and that lead's analysis has not landed — or, for precipitation, at every lead of a real-time init, since there is no precipitation truth for those at all. A pending lead has no PNG and no scale — a file of nothing but the missing byte would be bytes spent to say what this already says.",
        "type": "object",
        "propertyNames": {
         "$ref": "#/$defs/leadKey"

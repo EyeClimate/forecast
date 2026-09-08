@@ -603,14 +603,20 @@ function serve() {
   if (maxZoom !== cfg.max_zoom) fail(`map maxZoom is ${maxZoom}, manifest says ${cfg.max_zoom}`);
   else ok(`map honours the configured max zoom (${maxZoom})`);
 
-  // Nothing may be fetched off-origin until a basemap is switched on. Sections
-  // 1-10 have already driven the whole page, so anything third-party would have
+  // Nothing may be fetched off-origin until a basemap is switched on — and the
+  // configured default basemap is the one thing that is on from the first
+  // paint, so its host, and only its host, may appear. Sections 1-10 have
+  // already driven the whole page, so anything else third-party would have
   // shown up by now.
+  const defBase = cfg.basemaps.find((b) => b.id === cfg.default_basemap) || null;
+  const defHost = defBase ? new URL(defBase.url).host : null;
   const offOrigin = requests.filter(
-    (u) => !u.startsWith(`http://localhost:${PORT}`) && !u.startsWith("data:"));
+    (u) => !u.startsWith(`http://localhost:${PORT}`) && !u.startsWith("data:")
+           && !(defHost && new URL(u).host === defHost));
   if (offOrigin.length)
-    fail(`the page made ${offOrigin.length} off-origin request(s) with the basemap off: ${offOrigin[0]}`);
-  else ok("no third-party request until a basemap is asked for");
+    fail(`the page made ${offOrigin.length} off-origin request(s) beyond the default basemap: ${offOrigin[0]}`);
+  else ok(defHost ? `no third-party request except to the default basemap's host (${defHost})`
+                  : "no third-party request until a basemap is asked for");
 
   if (!cfg.basemaps.length) ok("no basemaps configured — skipping the rest of section 11");
   else {
@@ -765,8 +771,10 @@ function serve() {
     await page.evaluate(() => document.querySelector('#paneltabs button[data-panes="1"]').click());
     await new Promise((r) => setTimeout(r, 500));
 
-    // Auto mode: follows the zoom, both ways, until the reader states a
-    // preference. The clicks above were preferences, so this needs a fresh page.
+    // The default basemap: either the configured one, on at every zoom, or —
+    // with none configured — auto mode, which follows the zoom both ways. Either
+    // holds only until the reader states a preference, and the clicks above
+    // were preferences, so this needs a fresh page.
     await page.evaluate(() => localStorage.removeItem("scoreboard.basemap"));
     await page.goto(`http://localhost:${PORT}/map.html`, { waitUntil: "networkidle0" });
     await page.evaluate(() => window.__mapReady);
@@ -787,7 +795,13 @@ function serve() {
       return out;
     }, cfg.basemap_zoom);
     const first = cfg.basemaps[0].id;
-    if (auto.boot !== "off") fail(`basemap is ${auto.boot} at the opening world view, not off`);
+    if (cfg.default_basemap) {
+      const d = cfg.default_basemap;
+      if (auto.boot !== d) fail(`basemap is ${auto.boot} at the opening world view, not the configured default ${d}`);
+      else if (auto.zoomedIn !== d || auto.zoomedOut !== d)
+        fail(`the default basemap ${d} did not survive zooming (${auto.zoomedIn} in, ${auto.zoomedOut} out)`);
+      else ok(`default basemap ${d} is on at every zoom until asked otherwise`);
+    } else if (auto.boot !== "off") fail(`basemap is ${auto.boot} at the opening world view, not off`);
     else if (auto.zoomedIn !== first) fail(`zooming past ${cfg.basemap_zoom} left the basemap ${auto.zoomedIn}`);
     else if (auto.zoomedOut !== "off") fail(`zooming back out left the basemap ${auto.zoomedOut} under a whole-world view`);
     else ok(`basemap follows the zoom until asked otherwise (off -> ${first} -> off across z${cfg.basemap_zoom})`);

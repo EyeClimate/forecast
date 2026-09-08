@@ -1,12 +1,13 @@
-"""Export gridded `t2m` fields for map.html as quantized single-channel PNGs.
+"""Export gridded fields for map.html as quantized single-channel PNGs.
 
-EXPLORER_STEPS.md E4, PLAN_EXPLORER.md §4 and §5a. `t2m` only: all ten models
-carry it, truth exists in both regimes, and uint8 quantization is benign — so
-the export -> decode -> render chain gets proven before precipitation's
-log-scale and categorical-error complications arrive.
+EXPLORER_STEPS.md E4, PLAN_EXPLORER.md §4 and §5a. Built on `t2m` — all ten
+models carry it, truth exists in both regimes, and uint8 quantization is benign
+— then extended to `tp06` in the cheapest form that is still honest (see
+SUPPORTED_VARIABLES): a forecast raster on a fixed scale, with an error field
+only where precipitation truth actually exists.
 
 For each init, model and lead in `display.map_leads` two PNGs are written under
-`docs/data/fields/<init>/<model>/t2m/`:
+`docs/data/fields/<init>/<model>/<variable>/`:
 
     f<lead>.png   the forecast field
     e<lead>.png   model - truth
@@ -67,12 +68,34 @@ from .export import (INIT_FMT, SCHEMA_VERSION, STATUS_OK, STATUS_TRUTH_PENDING,
                      models_payload, scored_models, truth_available_through)
 from .forecast import forecast_path
 
-# t2m only, deliberately (PLAN_EXPLORER.md §5a). z500 and msl would work through
-# this exact code path and cost almost nothing, but they are a later step's
-# scope; precipitation cannot use it at all — linear uint8 across 0-100 mm/6 h
-# erases the drizzle band the 1 mm CSI threshold depends on, and pointwise
-# `model - truth` is the wrong error notion for it (§4).
-SUPPORTED_VARIABLES = ("t2m",)
+# t2m, plus tp06 in the cheapest form that is still honest. PLAN_EXPLORER.md
+# §5a deferred precipitation and §4's log scale + categorical error remain its
+# eventual shape; what ships here is the minimum that makes it fit this path.
+# z500 and msl would work through the same code and cost almost nothing, but
+# they are a later step's scope.
+#
+# FIXED_SCALES is what makes precipitation fit at all. A data-derived
+# [min, max] lets one 150 mm cell push the entire drizzle band — the 1 mm CSI
+# threshold everything else is scored at — into the first two of 254 levels.
+# A fixed 0-25 mm/6 h scale is 0.1 mm per level, and anything above it
+# saturates into the top of the ramp, which is how precipitation maps have
+# always been drawn. `quantize` clips, so a saturated cell decodes to 25 mm
+# rather than garbage, and scripts/check_fields.py compares these variables
+# against the clipped source.
+#
+# Its error field is `model - truth` like everyone else's — a bias map, not
+# §4's categorical rendering — and exists only where precipitation truth does:
+# from ERA5 for historic inits, and never for real-time ones (verify.py:146-149;
+# IMERG Late is not implemented). See truth_variables.
+SUPPORTED_VARIABLES = ("t2m", "tp06")
+FIXED_SCALES = {"tp06": [0.0, 25.0]}      # in display units (UNITS), not zarr units
+
+# Precipitation is neither named nor measured uniformly across the zarrs: atlas
+# and persistence store the 6 h accumulation as `tp`, everyone else as `tp06`,
+# and all of them in metres. The export is keyed by the canonical name and
+# written in mm/6h, the units export.py's points and the map's colourbar use.
+PRECIP_VARIABLES = ("tp06",)
+ZARR_NAMES = {"tp06": ("tp06", "tp")}     # canonical -> names to look for
 
 # uint8 layout. 0 is reserved so a renderer can distinguish "no data" from "the
 # coldest value on the map"; the 254 intervals between MIN_BYTE and MAX_BYTE
@@ -111,9 +134,9 @@ def map_settings(cfg: dict) -> tuple[list[str], list[int], float]:
     if unsupported:
         raise RuntimeError(
             f"display.map_variables has {unsupported}, but this exporter "
-            f"supports only {list(SUPPORTED_VARIABLES)}. Precipitation needs log "
-            "quantization and a categorical error rendering, not this path "
-            "(PLAN_EXPLORER.md §4); z500/msl are a later step.")
+            f"supports only {list(SUPPORTED_VARIABLES)}. z500/msl would work "
+            "through this path but are a later step; anything else needs its "
+            "units, scale and error story settled first (PLAN_EXPLORER.md §4).")
     if not variables or not leads:
         raise RuntimeError("display.map_variables and display.map_leads must "
                            "both be non-empty")
@@ -355,18 +378,45 @@ def fetch_truth(cfg: dict, init_time: datetime, leads: list[int],
     return tda, ready, label, pending
 
 
+def truth_variables(cfg: dict, init_time: datetime,
+                    variables: list[str]) -> list[str]:
+    """The subset of `variables` that has verification truth for this init.
+
+    Real-time precipitation is the one gap, and it is removed here rather than
+    left for the source to refuse: GFSInit would happily serve tp06 from GFS's
+    own +6 h background forecast, a model field rather than truth
+    (sources.truth_source), which is exactly why verify.py:146-149 and
+    export.py drop it. Both the exporter and scripts/check_fields.py fetch
+    through here, so neither can ask for it by accident.
+    """
+    return truth_variables_for_regime(
+        sources.regime(init_time, cfg["historic_cutoff_days"]), variables)
+
+
+def truth_variables_for_regime(regime: str, variables) -> list[str]:
+    """`truth_variables` keyed by regime label, for a caller holding a sidecar
+    (which records the regime) rather than a config and a clock."""
+    if regime != "realtime":
+        return list(variables)
+    return [v for v in variables if v not in PRECIP_VARIABLES]
+
+
 def fetch_truth_at(cfg: dict, init_time: datetime, leads: list[int],
                    variables: list[str]) -> tuple[object, str]:
     """Truth for exactly these leads, with no availability filtering.
 
     Split out for scripts/check_fields.py, which must reproduce the truth an
     export *used* — the leads its manifest marks `ok` — rather than whatever the
-    clock permits by the time the gate runs, which may be more.
+    clock permits by the time the gate runs, which may be more. Returns None
+    for the array when none of `variables` has truth in this regime.
     """
     valid = [init_time + timedelta(hours=h) for h in leads]
-    truth_vars = [sources.truth_variable(v) for v in variables]
+    truth_vars = [sources.truth_variable(v)
+                  for v in truth_variables(cfg, init_time, variables)]
     truth, label = sources.truth_source(init_time, valid[-1],
                                         cfg["historic_cutoff_days"])
+    if not truth_vars:
+        return None, label
     print(f"[fields] fetching truth ({label}) for {len(valid)} valid time(s) x "
           f"{len(truth_vars)} var(s) ...")
     return truth(valid, truth_vars), label
@@ -383,13 +433,31 @@ def truth_on_grid(tda, ready: list[int], variables: list[str],
     if tda is None:
         return {}
     aligned = tda.reindex(lat=lat, lon=lon, method="nearest", tolerance=1e-5)
+    present = set(np.asarray(tda["variable"].values).tolist())
     out = {}
     for i, h in enumerate(ready):
         for var in variables:
-            out[(var, h)] = np.asarray(
-                aligned.isel(time=i).sel(variable=sources.truth_variable(var))
-                .values, dtype=np.float64)
+            tv = sources.truth_variable(var)
+            if tv not in present:
+                continue            # no truth in this regime: truth_variables
+            out[(var, h)] = to_display_units(var, np.asarray(
+                aligned.isel(time=i).sel(variable=tv).values, dtype=np.float64))
     return out
+
+
+def to_display_units(var: str, field: np.ndarray) -> np.ndarray:
+    """Zarr/truth units -> the units the manifest publishes (UNITS).
+
+    Only precipitation differs: metres in every store, mm/6h on the page.
+    Negative accumulations are clipped to zero as export.py's points are, so
+    the map and the city popup cannot disagree about a cell. Non-finite cells
+    stay non-finite, unlike there — this module reserves a byte for missing
+    data and a NaN turned into "0 mm" would be drawn as a confident dry cell.
+    """
+    if var in PRECIP_VARIABLES:
+        return np.where(np.isfinite(field), np.clip(field, 0.0, None) * 1000.0,
+                        np.nan)
+    return field
 
 
 def source_arrays(cfg: dict, init_time: datetime, model: str,
@@ -419,15 +487,19 @@ def source_arrays(cfg: dict, init_time: datetime, model: str,
                 f"{zpath} has no lead_time for {missing} h — display.map_leads "
                 "asks for leads this forecast does not carry.")
         for var in variables:
-            if var not in ds:
+            name = next((n for n in ZARR_NAMES.get(var, (var,)) if n in ds), None)
+            if name is None:
+                # Not an error: three of the daily models have no precipitation
+                # head at all. The sidecar records per-variable coverage so the
+                # page and the gate both know which panes can exist.
                 print(f"[fields] {model} {init_time:{INIT_FMT}}: {var} declared "
                       "in display.map_variables but absent from the zarr")
                 continue
             for h in leads:
-                native = np.asarray(
-                    ds[var].isel(time=0)
+                native = to_display_units(var, np.asarray(
+                    ds[name].isel(time=0)
                     .sel(lead_time=np.timedelta64(h, "h")).values.squeeze(),
-                    dtype=np.float64)
+                    dtype=np.float64))
                 out[(var, "forecast", h)] = regrid(native, lat, lon,
                                                    tgt_lat, tgt_lon)
                 t = truth.get((var, h))
@@ -480,21 +552,30 @@ def export_fields_for_init(cfg: dict, site: Path, init_time: datetime,
     # aligned separately per model, since they do not share a latitude grid.
     truth_da, ready, truth_label, pending = fetch_truth(
         cfg, init_time, leads, variables, now)
+    # Variables with no truth in this regime (real-time precip) have every
+    # lead's error marked pending, not just the leads the clock withholds.
+    untruthed = [v for v in variables
+                 if v not in truth_variables(cfg, init_time, variables)]
 
     arrays: dict = {}
     for model in models:
         print(f"[fields] regridding {model} {init_time:{INIT_FMT}} to {res}° ...")
         arrays[model] = source_arrays(cfg, init_time, model, variables, leads,
                                       res, truth_da, ready)
+    covered = {var: [m for m in models if any(k[0] == var for k in arrays[m])]
+               for var in variables}
 
-    # Scales: one per (variable, kind, lead), over every model at that lead.
+    # Scales: one per (variable, kind, lead), over every model at that lead —
+    # or the fixed scale, for variables whose data range is the wrong scale.
     scales: dict = {}
     for var in variables:
         for h in leads:
             fc = [a[(var, "forecast", h)] for a in arrays.values()
                   if (var, "forecast", h) in a]
             if fc:
-                scales[(var, "forecast", h)] = forecast_scale(fc)
+                scales[(var, "forecast", h)] = (list(FIXED_SCALES[var])
+                                                if var in FIXED_SCALES
+                                                else forecast_scale(fc))
             er = [a[(var, "error", h)] for a in arrays.values()
                   if (var, "error", h) in a]
             if er:
@@ -552,17 +633,23 @@ def export_fields_for_init(cfg: dict, site: Path, init_time: datetime,
         # An error field for a lead whose truth has not landed would be a file
         # of nothing but the reserved missing byte, so it is not written at all
         # and the manifest marks that lead `truth_pending` instead. `png_count`
-        # is therefore models x vars x (leads + leads_with_truth), and equals
-        # EXPLORER_STEPS.md E4's models x leads x 2 exactly once truth is
-        # complete — which for a historic init is immediately. Both numbers are
+        # is therefore, per variable, its models x (leads + leads_with_truth),
+        # and equals EXPLORER_STEPS.md E4's models x leads x 2 exactly once
+        # truth is complete — which for a historic init is immediately, and for
+        # real-time precipitation is never until IMERG lands. Both numbers are
         # published so the difference is arithmetic rather than a discrepancy.
         "png_count": n_png,
-        "png_count_when_complete": len(models) * len(variables) * len(leads) * 2,
+        "png_count_when_complete": sum(len(covered[v]) for v in variables)
+                                   * len(leads) * 2,
         "bytes": 0,
     }
     for var in variables:
         entry = {
             "units": UNITS.get(var, ""),
+            # The subset of `models` whose zarr carries this variable. The page
+            # greys the others out rather than offering a pane that can only
+            # say "field unavailable", and the gate counts only these.
+            "models": covered[var],
             "forecast": {
                 "file": "f{lead}.png",
                 "scales": {str(h): scales[(var, "forecast", h)] for h in leads
@@ -576,7 +663,8 @@ def export_fields_for_init(cfg: dict, site: Path, init_time: datetime,
                 "scales": {str(h): scales[(var, "error", h)] for h in leads
                            if (var, "error", h) in scales},
                 "status": {
-                    str(h): (STATUS_TRUTH_PENDING if h in pending else STATUS_OK)
+                    str(h): (STATUS_TRUTH_PENDING
+                             if h in pending or var in untruthed else STATUS_OK)
                     for h in leads
                 },
             },
@@ -586,11 +674,11 @@ def export_fields_for_init(cfg: dict, site: Path, init_time: datetime,
     (outdir / "index.json").write_text(
         json.dumps(payload, indent=1, ensure_ascii=False) + "\n")
 
-    n_pending = len(pending) * len(variables) * len(models)
+    n_pending = payload["png_count_when_complete"] - n_png
     print(f"[fields] {init_time:{INIT_FMT}}: {n_png} PNG(s) of "
           f"{payload['png_count_when_complete']} "
           f"({len(models)} model(s) x {len(leads)} lead(s) x {len(variables)} "
-          f"var x 2 kinds, minus {n_pending} error field(s) still awaiting "
+          f"var(s) x 2 kinds, minus {n_pending} error field(s) still awaiting "
           f"truth) -> {outdir} ({payload['bytes'] / 1024:.0f} KiB, "
           f"{payload['bytes'] / len(models) / 1024:.0f} KiB per model)")
     return payload
@@ -669,7 +757,7 @@ def main():
     import yaml
 
     p = argparse.ArgumentParser(
-        description="Export quantized t2m field PNGs for docs/map.html")
+        description="Export quantized field PNGs for docs/map.html")
     p.add_argument("--config", default="config.yaml")
     p.add_argument("--init", nargs="*", default=None, metavar="YYYY-MM-DDTHH",
                    help="only these inits (default: every init with a zarr)")

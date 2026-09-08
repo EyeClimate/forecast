@@ -93,7 +93,7 @@ def subschema(manifest_schema: dict, name: str) -> dict:
 
 
 def encoding_errors(label: str, codes: np.ndarray, source: np.ndarray,
-                    scale) -> list[str]:
+                    scale, clipped: bool = False) -> list[str]:
     """Decode `codes` through `scale` and compare against `source`.
 
     Three separate claims, because they fail independently:
@@ -101,7 +101,12 @@ def encoding_errors(label: str, codes: np.ndarray, source: np.ndarray,
     - the decoded field is within **half a quantization step** of the source
       everywhere. Round-to-nearest over a scale that contains the data makes
       this an equality bound, not a heuristic one, so exceeding it means the
-      scale is not the one the field was encoded with;
+      scale is not the one the field was encoded with. `clipped` is for the
+      variables fields.FIXED_SCALES pins to a range the data may exceed —
+      precipitation saturating at the top of its ramp — where the encoder
+      clipped first, so the bound holds against the clipped source. It is
+      not a general tolerance: a t2m scale is rounded outward to contain its
+      data, so clipping would be a no-op there and is not applied;
     - the reserved missing byte appears at exactly the cells where the source is
       non-finite, and nowhere else — a renderer draws those transparent, so a
       misplaced one silently erases data or paints a hole as a temperature;
@@ -127,6 +132,8 @@ def encoding_errors(label: str, codes: np.ndarray, source: np.ndarray,
     both = finite & ~missing
     if not both.any():
         return errs
+    if clipped:
+        source = np.where(finite, np.clip(source, scale[0], scale[1]), source)
     decoded = fields.dequantize(codes, scale)
     step = fields.quantization_step(scale)
     resid = np.abs(decoded[both] - source[both])
@@ -273,8 +280,15 @@ def check_init_entry(name: str, entry: dict, root: Path,
                                 f"{0.5 * (lo + hi):.6g}, misrepresenting the "
                                 "sign of a bias")
 
-    for model in entry["models"]:
-        for var, vmeta in entry["variables"].items():
+    # A variable's own `models` (absent on sidecars written before precip:
+    # every model) is the coverage to check against — a model with no precip
+    # head has no tp06 PNGs to be missing.
+    for var, vmeta in entry["variables"].items():
+        extra = sorted(set(vmeta.get("models", [])) - set(entry["models"]))
+        if extra:
+            errs.append(f"fields[{name}] {var}: models {extra} are not among "
+                        "the init's models")
+        for model in vmeta.get("models", entry["models"]):
             for kind, meta in (("forecast", vmeta["forecast"]),
                                ("error", vmeta["error"])):
                 status = meta.get("status")
@@ -314,7 +328,8 @@ def check_init_entry(name: str, entry: dict, root: Path,
                     if src is None:
                         continue
                     errs += encoding_errors(str(path.relative_to(root)), codes,
-                                            src, meta["scales"][key])
+                                            src, meta["scales"][key],
+                                            clipped=var in fields.FIXED_SCALES)
                     n_decoded += 1
 
     on_disk = {p for p in d.rglob("*.png")}
@@ -325,12 +340,13 @@ def check_init_entry(name: str, entry: dict, root: Path,
     if len(on_disk) != entry["png_count"]:
         errs.append(f"fields[{name}]: png_count {entry['png_count']} != "
                     f"{len(on_disk)} file(s) on disk")
-    want_complete = (len(entry["models"]) * len(entry["variables"])
+    want_complete = (sum(len(v.get("models", entry["models"]))
+                         for v in entry["variables"].values())
                      * len(entry["leads"]) * 2)
     if entry["png_count_when_complete"] != want_complete:
         errs.append(f"fields[{name}]: png_count_when_complete "
-                    f"{entry['png_count_when_complete']} != models x variables "
-                    f"x leads x 2 = {want_complete}")
+                    f"{entry['png_count_when_complete']} != sum over variables "
+                    f"of its models x leads x 2 = {want_complete}")
     nbytes = sum(p.stat().st_size for p in on_disk)
     if nbytes != entry["bytes"]:
         errs.append(f"fields[{name}]: bytes {entry['bytes']} != actual {nbytes}")
@@ -356,7 +372,12 @@ def staleness_errors(name: str, entry: dict, now: datetime) -> list[str]:
     if through is None:
         return errs
     cutoff = through - timedelta(hours=TRUTH_STALENESS_GRACE_HOURS)
+    # Real-time precipitation is pending by construction — there is no truth
+    # source for it — not stale; fields.py is the one place that knows which.
+    truthed = fields.truth_variables_for_regime(entry["regime"], entry["variables"])
     for var, vmeta in entry["variables"].items():
+        if var not in truthed:
+            continue
         stale = [h for h in leads
                  if vmeta["error"]["status"].get(str(h)) == export.STATUS_TRUTH_PENDING
                  and init + timedelta(hours=h) <= cutoff]
@@ -544,9 +565,14 @@ def _synth_site(site: Path) -> dict:
         "series_statuses": ["ok", "no_variable", "truth_pending", "unavailable"],
         "leads": list(SYNTH_LEADS),
         "variables": {"t2m": {"label": "2 m temperature", "units": "K",
-                              "kind": "state", "decimals": 2}},
+                              "kind": "state", "decimals": 2,
+                              "palette": "temperature"}},
         "cities": [{"id": "alphaville", "name": "Alphaville", "lat": 10.0,
                     "lon": 20.0}],
+        # Required by the schema since E6; irrelevant to the field checks but
+        # a pristine tree that fails its own gate would mask every real fault.
+        "map": {"max_zoom": 8, "basemap_zoom": 6, "field_opacity": 0.72,
+                "basemaps": []},
         "inits": [],
         "fields": {SYNTH_NAME: copy.deepcopy(entry)},
     }

@@ -314,6 +314,18 @@ def map_payload(cfg: dict) -> dict:
             "id map.js uses for no basemap."
         )
     out["basemaps"] = basemaps
+
+    # The basemap that is on from the first paint, at every zoom. Null means
+    # the page's older behaviour: open clean, follow the zoom. Checked against
+    # the list here because on the page an unknown id would silently mean
+    # "off", which is the opposite of what the config asked for.
+    default = raw.get("default_basemap") or None
+    if default is not None and default not in seen:
+        raise RuntimeError(
+            f"config.yaml `display.map.default_basemap` is {default!r}, which is "
+            f"not one of the configured basemap ids {sorted(seen)}."
+        )
+    out["default_basemap"] = default
     return out
 
 

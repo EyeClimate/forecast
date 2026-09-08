@@ -75,7 +75,10 @@ display:
     - {id: atlas,          label: Atlas,       css_var: --s-atlas,     color: "#e87ba4", color_dark: "#d55181", width: 2}
     - {id: persistence,    label: Persistence, css_var: --s-ref,       color: "#848d9b", color_dark: "#7d8694", width: 1.5,
        short: "Persist.", baseline: true}
-    - {id: fengwu,         label: FengWu,      css_var: --s-fengwu,    color: "#eda100", color_dark: "#c98500", width: 2}
+    # Shown as EyeClimate. The id stays `fengwu` because it keys the metrics
+    # store and the per-model block above; renaming it would orphan history.
+    - {id: fengwu,         label: EyeClimate,  css_var: --s-fengwu,    color: "#eda100", color_dark: "#c98500", width: 2,
+       short: "EyeClim."}
     - {id: pangu6,         label: Pangu,       css_var: --s-pangu6,    color: "#4a3aa7", color_dark: "#9085e9", width: 2}
     - {id: sfno,           label: SFNO,        css_var: --s-sfno,      color: "#eb6834", color_dark: "#d95926", width: 2}
     - {id: fcn3,           label: FCN3,        css_var: --s-fcn3,      color: "#1baf7a", color_dark: "#199e70", width: 2}
@@ -121,10 +124,12 @@ display:
     - {name: Nairobi,        lat:  -1.29, lon:   36.82}
     - {name: Singapore,      lat:   1.35, lon:  103.82}
 
-  # map.html field export (EXPLORER_STEPS.md E4). t2m only for now — see
-  # PLAN_EXPLORER.md §5a for why precipitation is deliberately not first.
+  # map.html field export (EXPLORER_STEPS.md E4). t2m first (PLAN_EXPLORER.md
+  # §5a); tp06 rides the same path on a fixed 0-25 mm/6h scale, and is
+  # forecast-only for real-time inits because they have no precipitation
+  # truth — fields.py's SUPPORTED_VARIABLES says what "properly" would take.
   # Start at 1.0 deg for fast iteration, then raise to 0.5.
-  map_variables: [t2m]
+  map_variables: [t2m, tp06]
   map_leads: [24, 48, 72, 96, 120]
   map_resolution_deg: 1.0
 
@@ -143,10 +148,13 @@ display:
     u10m:  wind
     v10m:  wind
 
-  # Street cartography for map.html: roads, towns, water. Off at global zooms,
-  # switched on automatically past `basemap_zoom` — a 1 deg field has nothing to
-  # say at street scale, so this is orientation for a reader who has already
-  # zoomed in to ask "where exactly is this", not a second data layer.
+  # Street cartography for map.html: roads, towns, water. `default_basemap`
+  # names the one that is on from the first paint at every zoom (the reader's
+  # own choice, once made, is remembered and wins). Leave it unset and the map
+  # instead opens clean and switches a basemap on only past `basemap_zoom` —
+  # a 1 deg field has nothing to say at street scale, so that mode treats it
+  # as orientation for a reader who has zoomed in to ask "where exactly is
+  # this", not a second data layer.
   #
   # These are WMS endpoints rather than the usual {z}/{x}/{y} tile services, and
   # that is forced rather than chosen. The map's CRS is EPSG:4326 (see
@@ -167,7 +175,8 @@ display:
   # map whenever a layer is on, and these services are used on their terms.
   map:
     max_zoom: 10             # was 6; street scale needs the extra levels
-    basemap_zoom: 6          # auto-on at and above this zoom, auto-off below
+    default_basemap: terrain # on at every zoom until the reader picks another
+    basemap_zoom: 6          # with no default: auto-on at/above this zoom, off below
     field_opacity: 0.72      # field alpha while an opaque basemap sits under it
     basemaps:
       - id: labels

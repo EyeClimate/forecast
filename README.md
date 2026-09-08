@@ -210,25 +210,33 @@ the exporter guesses without it.
 ## Gridded field export
 
 `scoreboard/fields.py` writes the global maps `docs/map.html` will draw, as
-quantized single-channel PNGs. **`t2m` only** — all ten models carry it, truth
-exists in both regimes, and uint8 quantization is benign, so the chain gets
-proven before precipitation's log scale and categorical error arrive
-(PLAN_EXPLORER.md §5a).
+quantized single-channel PNGs. Built on **`t2m`** — all ten models carry it,
+truth exists in both regimes, and uint8 quantization is benign — and extended
+to **`tp06`** in the cheapest form that is still honest: a forecast raster on a
+fixed 0–25 mm/6h scale (0.1 mm per level, saturating above), with an error
+field only where precipitation truth exists. That means **never for real-time
+inits** — there is no real-time precip truth (`verify.py:146-149`), so every
+lead of a real-time init's `tp06` error is `truth_pending` — and from ERA5 for
+historic ones, as a `model − truth` bias map rather than PLAN_EXPLORER.md §4's
+categorical rendering. Three of the daily models (`fengwu`, `sfno`, `fcn3`)
+have no precipitation head; each variable's sidecar entry lists the `models`
+that carry it, and the page greys the rest out.
 
 ```bash
 conda run -n earth2 python -m scoreboard.fields [--init YYYY-MM-DDTHH] [--latest]
 ```
 
-For each init, model, and lead in `config.yaml`'s `display.map_leads`, `t2m` is
-regridded to `display.map_resolution_deg` and written to
-`docs/data/fields/<init>/<model>/t2m/` as `f<lead>.png` (forecast) and
-`e<lead>.png` (`model − truth`). `docs/data/fields/<init>/index.json` is the
+For each init, model, lead in `config.yaml`'s `display.map_leads` and variable
+in `display.map_variables`, the field is regridded to `display.map_resolution_deg`
+and written to `docs/data/fields/<init>/<model>/<variable>/` as `f<lead>.png`
+(forecast) and `e<lead>.png` (`model − truth`). Precipitation is read as `tp` or
+`tp06`, whichever the zarr calls it, and converted from metres to mm/6h. `docs/data/fields/<init>/index.json` is the
 durable record of every scale and grid parameter; `manifest.json`'s `fields`
 section is aggregated from those sidecars by `export.write_manifest`, so the two
 exporters can run in either order and a points-only export cannot drop the
 field metadata.
 
-Four encoding decisions are load-bearing:
+Five encoding decisions are load-bearing:
 
 - **The error field is differenced in float, at native 0.25°, before either side
   is quantized.** uint8 across a 220–320 K range is ~0.39 K per level, so a page
@@ -249,6 +257,12 @@ Four encoding decisions are load-bearing:
   scales would quantize each field a little more finely and would render the
   same temperature as two different colours in a side-by-side comparison. For a
   comparison site that trade is the wrong way round.
+- **Precipitation's forecast scale is fixed, not data-derived.** A [min, max]
+  over the data would let one 150 mm cell push the entire drizzle band — the
+  1 mm CSI threshold everything else is scored at — into the first two of 254
+  levels. `fields.FIXED_SCALES` pins it to 0–25 mm/6h; the encoder clips, so a
+  saturated cell decodes to 25 mm, and the gate compares those variables
+  against the clipped source.
 
 A lead whose truth has not landed yet gets **no** error PNG and is marked
 `truth_pending` in the manifest, rather than a file containing nothing but the
@@ -408,18 +422,22 @@ soon as a basemap is on. A 30° graticule is generated in JS, and city names fro
 `manifest.json`'s `cities` appear at zoom ≥ 3 with a paint-order halo, since they
 sit directly on a saturated field.
 
-**Street basemap.** Past zoom `display.map.basemap_zoom` (6) the map switches on
-a basemap and switches it off again on the way out, until the reader picks one
-explicitly — an explicit choice is remembered and ends the automatic behaviour.
-At world scale a 1° field wants a clean outline, not street cartography; at
-street scale a coastline has stopped answering "where exactly is this".
+**Basemap.** `display.map.default_basemap` (currently `terrain`) is on from the
+first paint at every zoom, until the reader picks another — an explicit choice,
+including "Off", is remembered in `localStorage` and wins over the default from
+then on. With `default_basemap` unset the map falls back to its older
+behaviour: it opens clean, switches a basemap on past `display.map.basemap_zoom`
+(6) and off again on the way out, until the reader states a preference — at
+world scale a 1° field wants a clean outline, at street scale a coastline has
+stopped answering "where exactly is this".
 
 The entries live in `config.yaml`'s `display.map.basemaps` and reach the page
 through `manifest.json`; adding one adds a button, and `export.py` refuses an
-entry with no attribution. Three ship: **Roads** (transparent OSM roads and place
-names drawn *over* a full-strength field — the default, and the reason it is
-listed first), **Streets** and **Terrain** (opaque, drawn *under* the field,
-which is dimmed to `field_opacity` with a slider to override).
+entry with no attribution or a `default_basemap` naming no entry. Three ship:
+**Roads** (transparent OSM roads and place names drawn *over* a full-strength
+field — what the zoom-following mode switches on, and the reason it is listed
+first), **Streets** and **Terrain** (opaque, drawn *under* the field, which is
+dimmed to `field_opacity` with a slider to override).
 
 **These are WMS endpoints, not `{z}/{x}/{y}` tile services, and that is forced.**
 The map's CRS is `EPSG:4326`, while every CDN raster basemap — CARTO, OSM's own,
@@ -505,9 +523,19 @@ Each run forecasts yesterday's 00z init for every real-time-capable model
 (all but atlas) and re-runs the trailing 8 days — verification is
 incremental, so this scores exactly the leads whose GFS-analysis truth
 arrived since the last run; a 5-day forecast completes over ~6 daily runs.
-It then sweeps old zarrs and, if `docs/index.html` changed, commits and
-pushes it so GitHub Pages serves fresh scores. The separate published copy of
-the page is not updated by cron — republish it manually when desired.
+It then refreshes the explorer data: `scoreboard.export` tops up point truth
+for every init on disk, and `scoreboard.fields` re-exports the gridded fields
+for the same trailing 8-day window (fields are re-exported whole, not topped
+up, and an init's error maps only complete as its truth lands — so the window
+is re-walked while those zarrs still exist, before sweep). Finally it sweeps
+old zarrs and, if `docs/index.html` or anything under `docs/data/` changed,
+commits and pushes so GitHub Pages serves fresh scores. The separate published
+copy of the page is not updated by cron — republish it manually when desired.
+
+Committing `docs/data/fields/` daily is PLAN_EXPLORER.md §7's option 3 — at
+1.0° that is ~2–3 MB of new binaries per day, retention-bounded on disk but
+permanent in history. Moving to a force-pushed `gh-pages` branch (§7's option
+1) needs the Pages source changed in the repository settings first.
 
 ## Retention
 

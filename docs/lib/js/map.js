@@ -1,14 +1,14 @@
 /* map.html — global forecast and error fields.
  *
- * Leaflet with L.CRS.EPSG4326: the field is drawn to a canvas overlay and a
- * Natural Earth coastline is stroked on top. At global zooms that is the whole
- * map, and deliberately so — for a 1 deg scientific field a clean outline reads
- * better than street cartography, and the page makes no external request.
- *
- * Past `map.basemap_zoom` a WMS basemap switches itself on (see basemap()
- * below), because at that scale the coastline has stopped being enough to
- * answer "where exactly is this". It is WMS rather than {z}/{x}/{y} for a
- * reason that is easy to get wrong; config.yaml's `display.map` block has it.
+ * Leaflet with L.CRS.EPSG4326: the field is drawn to a canvas overlay, with
+ * either a WMS basemap or a Natural Earth coastline beneath/over it. Which one
+ * opens is config.yaml's `map.default_basemap` (terrain, at every zoom); with
+ * no default the page opens on the coastline alone — a clean outline reads
+ * better than street cartography for a 1 deg field, and makes no external
+ * request — and switches a basemap on past `map.basemap_zoom`, where the
+ * coastline has stopped being enough to answer "where exactly is this". It is
+ * WMS rather than {z}/{x}/{y} for a reason that is easy to get wrong;
+ * config.yaml's `display.map` block has it.
  *
  * Everything about the grid and the encoding comes from manifest.json. Nothing
  * here infers geometry from array shape — that is how a north-up field gets
@@ -46,10 +46,11 @@ async function boot() {
   S.mapcfg = { ...MAP_DEFAULTS, ...(manifest.map || {}) };
   S.basemaps = S.mapcfg.basemaps || [];
   S.basemapId = loadBasemap();
-  // Auto mode follows the zoom until the reader states a preference; a stored
-  // preference is a statement, so it also ends auto mode.
-  S.basemapAuto = S.basemapId === null;
-  if (S.basemapAuto) S.basemapId = "off";
+  // A stored preference is a statement and wins. Below it, the configured
+  // default is on at every zoom; only with neither does the page enter auto
+  // mode, where the basemap follows the zoom until the reader states one.
+  S.basemapAuto = S.basemapId === null && !S.mapcfg.default_basemap;
+  if (S.basemapId === null) S.basemapId = S.mapcfg.default_basemap || "off";
   if (!S.basemaps.some((b) => b.id === S.basemapId)) S.basemapId = "off";
 
   const fieldInits = Object.keys(manifest.fields || {});
@@ -135,11 +136,18 @@ function buildInitSelect() {
 }
 
 function buildModelSelects() {
-  [["modelsel", "model"], ["modelsel2", "model2"]].forEach(([id, key]) => {
+  // A variable can be carried by fewer models than the init has — three of the
+  // daily models have no precipitation head — so the sidecar's per-variable
+  // `models` (absent on older sidecars: every model) greys the rest out rather
+  // than offering a pane that can only say "field unavailable". A selection
+  // the new variable does not cover moves to its first covered model.
+  const have = (S.f.variables[S.variable] || {}).models || S.f.models;
+  [["modelsel", "model"], ["modelsel2", "model2"]].forEach(([id, key], i) => {
+    if (!have.includes(S[key])) S[key] = have[Math.min(i, have.length - 1)] || S.f.models[0];
     const sel = $(id); sel.innerHTML = "";
     S.f.models.forEach((m) => {
       const o = el("option", null, modelInfo(m).label);
-      o.value = m; sel.appendChild(o);
+      o.value = m; o.disabled = !have.includes(m); sel.appendChild(o);
     });
     sel.value = S[key];
     sel.onchange = async () => { S[key] = sel.value; await render(); };
@@ -318,7 +326,8 @@ function trackPanelBreakpoint() {
  * Defaults for a manifest written before `display.map` existed. max_zoom 6 and
  * an empty basemap list reproduce the pre-basemap page exactly.
  */
-const MAP_DEFAULTS = { max_zoom: 6, basemap_zoom: 6, field_opacity: 0.72, basemaps: [] };
+const MAP_DEFAULTS = { max_zoom: 6, basemap_zoom: 6, field_opacity: 0.72, basemaps: [],
+                       default_basemap: null };
 const BASEMAP_KEY = "scoreboard.basemap";
 
 /* null means "never chosen" — which is what puts the page in auto mode, and is

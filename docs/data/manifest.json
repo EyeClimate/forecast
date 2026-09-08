@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-07-30T21:23:19Z",
+ "generated": "2026-09-08T04:45:32Z",
  "series_statuses": [
   "ok",
   "no_variable",
@@ -302,16 +302,17 @@
     "layers": "TOPO-OSM-WMS",
     "attribution": "Terrain &amp; OSM &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors, rendered by <a href=\"https://www.terrestris.de/\">terrestris</a>"
    }
-  ]
+  ],
+  "default_basemap": "terrain"
  },
  "inits": [
   {
-   "init_time": "2026-07-22T00:00:00Z",
+   "init_time": "2026-07-30T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-27T00:00:00Z",
+   "truth_valid_through": "2026-08-04T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -366,7 +367,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-22T00",
+    "dir": "points/2026-07-30T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -401,16 +402,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 396406
+    "bytes": 396510
    }
   },
   {
-   "init_time": "2026-07-23T00:00:00Z",
+   "init_time": "2026-07-31T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-28T00:00:00Z",
+   "truth_valid_through": "2026-08-05T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -465,7 +466,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-23T00",
+    "dir": "points/2026-07-31T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -500,16 +501,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 396109
+    "bytes": 396491
    }
   },
   {
-   "init_time": "2026-07-24T00:00:00Z",
+   "init_time": "2026-08-01T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-29T00:00:00Z",
+   "truth_valid_through": "2026-08-06T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -564,7 +565,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-24T00",
+    "dir": "points/2026-08-01T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -599,16 +600,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 396128
+    "bytes": 396549
    }
   },
   {
-   "init_time": "2026-07-25T00:00:00Z",
+   "init_time": "2026-08-02T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-30T00:00:00Z",
+   "truth_valid_through": "2026-08-07T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -663,7 +664,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-25T00",
+    "dir": "points/2026-08-02T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -698,16 +699,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 396219
+    "bytes": 396513
    }
   },
   {
-   "init_time": "2026-07-26T00:00:00Z",
+   "init_time": "2026-08-03T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-30T12:00:00Z",
+   "truth_valid_through": "2026-08-08T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -762,7 +763,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-26T00",
+    "dir": "points/2026-08-03T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -797,16 +798,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 395169
+    "bytes": 396367
    }
   },
   {
-   "init_time": "2026-07-27T00:00:00Z",
+   "init_time": "2026-08-04T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-30T12:00:00Z",
+   "truth_valid_through": "2026-08-09T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -861,7 +862,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-27T00",
+    "dir": "points/2026-08-04T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -896,16 +897,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 393556
+    "bytes": 396262
    }
   },
   {
-   "init_time": "2026-07-28T00:00:00Z",
+   "init_time": "2026-08-05T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-30T12:00:00Z",
+   "truth_valid_through": "2026-08-10T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -960,7 +961,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-28T00",
+    "dir": "points/2026-08-05T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -995,16 +996,16 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 392411
+    "bytes": 396215
    }
   },
   {
-   "init_time": "2026-07-29T00:00:00Z",
+   "init_time": "2026-08-06T00:00:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-07-30T12:00:00Z",
+   "truth_valid_through": "2026-08-11T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -1059,7 +1060,7 @@
     "z500"
    ],
    "points": {
-    "dir": "points/2026-07-29T00",
+    "dir": "points/2026-08-06T00",
     "cities": [
      "bangkok",
      "beijing",
@@ -1094,137 +1095,3053 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 391287
+    "bytes": 396521
+   }
+  },
+  {
+   "init_time": "2026-08-07T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-12T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-07T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396774
+   }
+  },
+  {
+   "init_time": "2026-08-08T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-13T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-08T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 333635
+   }
+  },
+  {
+   "init_time": "2026-08-09T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-14T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-09T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396697
+   }
+  },
+  {
+   "init_time": "2026-08-10T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-15T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-10T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397098
+   }
+  },
+  {
+   "init_time": "2026-08-11T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-16T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-11T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396974
+   }
+  },
+  {
+   "init_time": "2026-08-12T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-17T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-12T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397404
+   }
+  },
+  {
+   "init_time": "2026-08-13T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-18T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-13T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397154
+   }
+  },
+  {
+   "init_time": "2026-08-14T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-19T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-14T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397046
+   }
+  },
+  {
+   "init_time": "2026-08-15T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-20T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-15T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397475
+   }
+  },
+  {
+   "init_time": "2026-08-16T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-21T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-16T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 397228
+   }
+  },
+  {
+   "init_time": "2026-08-17T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-22T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-17T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396842
+   }
+  },
+  {
+   "init_time": "2026-08-18T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-23T00:00:00Z",
+   "models": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-18T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 174008
+   }
+  },
+  {
+   "init_time": "2026-08-19T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-24T00:00:00Z",
+   "models": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-19T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 173678
+   }
+  },
+  {
+   "init_time": "2026-08-20T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-25T00:00:00Z",
+   "models": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence",
+    "sfno"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-20T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 173775
+   }
+  },
+  {
+   "init_time": "2026-08-21T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-26T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-21T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396689
+   }
+  },
+  {
+   "init_time": "2026-08-22T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-27T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-22T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396870
+   }
+  },
+  {
+   "init_time": "2026-08-23T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-28T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-23T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 333758
+   }
+  },
+  {
+   "init_time": "2026-08-24T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-29T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-24T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396862
+   }
+  },
+  {
+   "init_time": "2026-08-25T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-30T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-25T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396845
+   }
+  },
+  {
+   "init_time": "2026-08-26T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-08-31T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-26T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396608
+   }
+  },
+  {
+   "init_time": "2026-08-27T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-01T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-27T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396630
+   }
+  },
+  {
+   "init_time": "2026-08-28T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-02T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-28T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396411
+   }
+  },
+  {
+   "init_time": "2026-08-29T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-03T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-29T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396327
+   }
+  },
+  {
+   "init_time": "2026-08-30T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-04T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-30T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396451
+   }
+  },
+  {
+   "init_time": "2026-08-31T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-05T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-08-31T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396932
+   }
+  },
+  {
+   "init_time": "2026-09-01T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-06T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-01T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396625
+   }
+  },
+  {
+   "init_time": "2026-09-02T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-07T00:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-02T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396587
+   }
+  },
+  {
+   "init_time": "2026-09-03T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-07T18:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-03T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 396392
+   }
+  },
+  {
+   "init_time": "2026-09-04T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-07T18:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-04T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 394892
+   }
+  },
+  {
+   "init_time": "2026-09-05T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-07T18:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-05T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 393881
+   }
+  },
+  {
+   "init_time": "2026-09-06T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-07T18:00:00Z",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-06T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 392159
    }
   }
  ],
  "fields": {
-  "2023-01-15T00": {
+  "2026-08-31T00": {
    "schema_version": 1,
-   "init_time": "2023-01-15T00:00:00Z",
-   "generated": "2026-07-30T08:10:16Z",
-   "regime": "historic",
-   "tier": "final",
-   "init_source": "era5_arco",
-   "truth_source": "era5_arco",
-   "dir": "fields/2023-01-15T00",
-   "grid": {
-    "resolution_deg": 1.0,
-    "width": 360,
-    "height": 181,
-    "lat_start": 90.0,
-    "lat_step": -1.0,
-    "lon_start": 0.0,
-    "lon_step": 1.0
-   },
-   "encoding": {
-    "dtype": "uint8",
-    "missing": 0,
-    "min_byte": 1,
-    "max_byte": 255,
-    "levels": 254,
-    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
-   },
-   "leads": [
-    24,
-    48,
-    72,
-    96,
-    120
-   ],
-   "models": [
-    "atlas"
-   ],
-   "models_expected": [
-    "aurora",
-    "fuxi",
-    "atlas",
-    "persistence",
-    "fengwu",
-    "pangu6",
-    "sfno",
-    "fcn3",
-    "graphcast_oper",
-    "aifs"
-   ],
-   "variables": {
-    "t2m": {
-     "units": "K",
-     "forecast": {
-      "file": "f{lead}.png",
-      "scales": {
-       "24": [
-        212.607,
-        308.869
-       ],
-       "48": [
-        215.256,
-        312.808
-       ],
-       "72": [
-        215.279,
-        309.672
-       ],
-       "96": [
-        218.364,
-        307.62
-       ],
-       "120": [
-        219.624,
-        309.951
-       ]
-      }
-     },
-     "error": {
-      "file": "e{lead}.png",
-      "symmetric": true,
-      "definition": "model - truth",
-      "truth_source": "era5_arco",
-      "scales": {
-       "24": [
-        -6.971,
-        6.971
-       ],
-       "48": [
-        -11.038,
-        11.038
-       ],
-       "72": [
-        -20.263,
-        20.263
-       ],
-       "96": [
-        -17.267,
-        17.267
-       ],
-       "120": [
-        -22.429,
-        22.429
-       ]
-      },
-      "status": {
-       "24": "ok",
-       "48": "ok",
-       "72": "ok",
-       "96": "ok",
-       "120": "ok"
-      }
-     }
-    }
-   },
-   "png_count": 10,
-   "png_count_when_complete": 10,
-   "bytes": 280168
-  },
-  "2026-07-28T00": {
-   "schema_version": 1,
-   "init_time": "2026-07-28T00:00:00Z",
-   "generated": "2026-07-30T08:12:17Z",
+   "init_time": "2026-08-31T00:00:00Z",
+   "generated": "2026-09-08T04:32:48Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "dir": "fields/2026-07-28T00",
+   "dir": "fields/2026-08-31T00",
    "grid": {
     "resolution_deg": 1.0,
     "width": 360,
@@ -1274,28 +4191,39 @@
    "variables": {
     "t2m": {
      "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
      "forecast": {
       "file": "f{lead}.png",
       "scales": {
        "24": [
-        196.669,
-        316.945
+        206.505,
+        313.581
        ],
        "48": [
-        199.381,
-        317.76
+        205.778,
+        313.729
        ],
        "72": [
-        199.097,
-        319.006
+        200.779,
+        313.581
        ],
        "96": [
-        194.45,
-        319.489
+        198.826,
+        313.581
        ],
        "120": [
-        193.002,
-        319.67
+        197.957,
+        313.581
        ]
       }
      },
@@ -1306,12 +4234,925 @@
       "truth_source": "gfs_analysis",
       "scales": {
        "24": [
-        -20.781,
-        20.781
+        -24.433,
+        24.433
        ],
        "48": [
-        -25.988,
-        25.988
+        -27.62,
+        27.62
+       ],
+       "72": [
+        -33.357,
+        33.357
+       ],
+       "96": [
+        -34.696,
+        34.696
+       ],
+       "120": [
+        -36.135,
+        36.135
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "ok",
+       "120": "ok"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 120,
+   "png_count_when_complete": 150,
+   "bytes": 2590086
+  },
+  "2026-09-01T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-01T00:00:00Z",
+   "generated": "2026-09-08T04:32:58Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-01T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        203.186,
+        313.219
+       ],
+       "48": [
+        200.333,
+        314.128
+       ],
+       "72": [
+        199.888,
+        313.322
+       ],
+       "96": [
+        200.093,
+        312.627
+       ],
+       "120": [
+        199.277,
+        312.317
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -29.348,
+        29.348
+       ],
+       "48": [
+        -30.388,
+        30.388
+       ],
+       "72": [
+        -32.115,
+        32.115
+       ],
+       "96": [
+        -33.192,
+        33.192
+       ],
+       "120": [
+        -40.214,
+        40.214
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "ok",
+       "120": "ok"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 120,
+   "png_count_when_complete": 150,
+   "bytes": 2564344
+  },
+  "2026-09-02T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-02T00:00:00Z",
+   "generated": "2026-09-08T04:33:08Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-02T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        199.871,
+        314.866
+       ],
+       "48": [
+        200.743,
+        313.9
+       ],
+       "72": [
+        203.546,
+        314.053
+       ],
+       "96": [
+        200.566,
+        312.911
+       ],
+       "120": [
+        201.207,
+        314.182
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -30.024,
+        30.024
+       ],
+       "48": [
+        -29.443,
+        29.443
+       ],
+       "72": [
+        -31.056,
+        31.056
+       ],
+       "96": [
+        -38.261,
+        38.261
+       ],
+       "120": [
+        -33.608,
+        33.608
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "ok",
+       "120": "ok"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 120,
+   "png_count_when_complete": 150,
+   "bytes": 2576003
+  },
+  "2026-09-03T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-03T00:00:00Z",
+   "generated": "2026-09-08T04:33:17Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-03T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        198.803,
+        314.195
+       ],
+       "48": [
+        202.728,
+        312.369
+       ],
+       "72": [
+        199.571,
+        312.886
+       ],
+       "96": [
+        198.806,
+        313.971
+       ],
+       "120": [
+        200.307,
+        314.426
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -22.493,
+        22.493
+       ],
+       "48": [
+        -32.094,
+        32.094
+       ],
+       "72": [
+        -35.794,
+        35.794
+       ],
+       "96": [
+        -29.159,
+        29.159
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "ok",
+       "120": "truth_pending"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 111,
+   "png_count_when_complete": 150,
+   "bytes": 2377616
+  },
+  "2026-09-04T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-04T00:00:00Z",
+   "generated": "2026-09-08T04:33:24Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-04T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        203.276,
+        312.255
+       ],
+       "48": [
+        201.841,
+        312.316
+       ],
+       "72": [
+        197.863,
+        314.282
+       ],
+       "96": [
+        198.883,
+        315.279
+       ],
+       "120": [
+        197.698,
+        314.146
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -31.706,
+        31.706
+       ],
+       "48": [
+        -32.951,
+        32.951
+       ],
+       "72": [
+        -34.648,
+        34.648
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "ok",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 102,
+   "png_count_when_complete": 150,
+   "bytes": 2113310
+  },
+  "2026-09-05T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-05T00:00:00Z",
+   "generated": "2026-09-08T04:33:31Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-05T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        201.447,
+        312.469
+       ],
+       "48": [
+        201.477,
+        313.223
+       ],
+       "72": [
+        199.225,
+        314.373
+       ],
+       "96": [
+        197.232,
+        314.85
+       ],
+       "120": [
+        194.082,
+        313.767
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -32.824,
+        32.824
+       ],
+       "48": [
+        -26.908,
+        26.908
        ]
       },
       "status": {
@@ -1322,11 +5163,230 @@
        "120": "truth_pending"
       }
      }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
     }
    },
-   "png_count": 63,
-   "png_count_when_complete": 90,
-   "bytes": 1403582
+   "png_count": 93,
+   "png_count_when_complete": 150,
+   "bytes": 1899771
+  },
+  "2026-09-06T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-06T00:00:00Z",
+   "generated": "2026-09-08T04:33:38Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-06T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "models_expected": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "fengwu",
+      "pangu6",
+      "sfno",
+      "fcn3",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        202.276,
+        313.89
+       ],
+       "48": [
+        201.895,
+        314.095
+       ],
+       "72": [
+        200.183,
+        315.902
+       ],
+       "96": [
+        197.963,
+        315.214
+       ],
+       "120": [
+        194.442,
+        315.17
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -25.604,
+        25.604
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "aurora",
+      "fuxi",
+      "persistence",
+      "pangu6",
+      "graphcast_oper",
+      "aifs"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 84,
+   "png_count_when_complete": 150,
+   "bytes": 1683318
   }
  }
 }
