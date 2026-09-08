@@ -1,0 +1,169 @@
+{
+ "schema_version": 1,
+ "init_time": "2026-09-07T00:00:00Z",
+ "generated": "2026-09-08T11:52:12Z",
+ "regime": "realtime",
+ "tier": "provisional",
+ "init_source": "gfs",
+ "truth_source": "gfs_analysis",
+ "dir": "fields/2026-09-07T00",
+ "grid": {
+  "resolution_deg": 1.0,
+  "width": 360,
+  "height": 181,
+  "lat_start": 90.0,
+  "lat_step": -1.0,
+  "lon_start": 0.0,
+  "lon_step": 1.0
+ },
+ "encoding": {
+  "dtype": "uint8",
+  "missing": 0,
+  "min_byte": 1,
+  "max_byte": 255,
+  "levels": 254,
+  "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+ },
+ "leads": [
+  24,
+  48,
+  72,
+  96,
+  120
+ ],
+ "models": [
+  "aurora",
+  "fuxi",
+  "persistence",
+  "fengwu",
+  "pangu6",
+  "sfno",
+  "fcn3",
+  "graphcast_oper",
+  "aifs"
+ ],
+ "models_expected": [
+  "aurora",
+  "fuxi",
+  "persistence",
+  "fengwu",
+  "pangu6",
+  "sfno",
+  "fcn3",
+  "graphcast_oper",
+  "aifs"
+ ],
+ "variables": {
+  "t2m": {
+   "units": "K",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "fengwu",
+    "pangu6",
+    "sfno",
+    "fcn3",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "forecast": {
+    "file": "f{lead}.png",
+    "scales": {
+     "24": [
+      206.368,
+      314.68
+     ],
+     "48": [
+      203.321,
+      316.379
+     ],
+     "72": [
+      202.479,
+      316.352
+     ],
+     "96": [
+      196.01,
+      314.817
+     ],
+     "120": [
+      196.659,
+      313.905
+     ]
+    }
+   },
+   "error": {
+    "file": "e{lead}.png",
+    "symmetric": true,
+    "definition": "model - truth",
+    "truth_source": "gfs_analysis",
+    "scales": {
+     "24": [
+      -30.337,
+      30.337
+     ]
+    },
+    "status": {
+     "24": "ok",
+     "48": "truth_pending",
+     "72": "truth_pending",
+     "96": "truth_pending",
+     "120": "truth_pending"
+    }
+   }
+  },
+  "tp06": {
+   "units": "mm/6h",
+   "models": [
+    "aurora",
+    "fuxi",
+    "persistence",
+    "pangu6",
+    "graphcast_oper",
+    "aifs"
+   ],
+   "forecast": {
+    "file": "f{lead}.png",
+    "scales": {
+     "24": [
+      0.0,
+      25.0
+     ],
+     "48": [
+      0.0,
+      25.0
+     ],
+     "72": [
+      0.0,
+      25.0
+     ],
+     "96": [
+      0.0,
+      25.0
+     ],
+     "120": [
+      0.0,
+      25.0
+     ]
+    }
+   },
+   "error": {
+    "file": "e{lead}.png",
+    "symmetric": true,
+    "definition": "model - truth",
+    "truth_source": "gfs_analysis",
+    "scales": {},
+    "status": {
+     "24": "truth_pending",
+     "48": "truth_pending",
+     "72": "truth_pending",
+     "96": "truth_pending",
+     "120": "truth_pending"
+    }
+   }
+  }
+ },
+ "png_count": 84,
+ "png_count_when_complete": 150,
+ "bytes": 1671548
+}
