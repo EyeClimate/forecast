@@ -104,6 +104,14 @@ function selectInit() {
 
 const modelInfo = (id) => S.models.find((m) => m.id === id) || { id, label: id, color: "#888", css_var: "--none" };
 
+/* A model's name for the variable on screen. `variable_labels` on its
+ * models.json entry (config.yaml display.models) renames it for that one
+ * variable — AIFS's precipitation is shown as EyeClimate, since the EyeClimate
+ * entry itself (fengwu) has no precipitation head — and nowhere else, which is
+ * why this is resolved per draw rather than stored on the model. */
+const modelLabel = (id, variable = S.variable) =>
+  ((modelInfo(id).variable_labels || {})[variable] || {}).label || modelInfo(id).label;
+
 /* Show a fatal error in the page instead of only the console.
  *
  * This used to write into `document.querySelector("main")`, which map.html does
@@ -137,17 +145,19 @@ function buildInitSelect() {
 
 function buildModelSelects() {
   // A variable can be carried by fewer models than the init has — three of the
-  // daily models have no precipitation head — so the sidecar's per-variable
-  // `models` (absent on older sidecars: every model) greys the rest out rather
-  // than offering a pane that can only say "field unavailable". A selection
-  // the new variable does not cover moves to its first covered model.
+  // daily models have no precipitation head — so the selector lists only the
+  // sidecar's per-variable `models` (absent on older sidecars: every model).
+  // Omitted rather than greyed out: names are per variable (modelLabel), so a
+  // greyed "EyeClimate" (fengwu, no precip) would sit beside the live one
+  // (AIFS's precip). A selection the new variable does not cover moves to its
+  // first covered model.
   const have = (S.f.variables[S.variable] || {}).models || S.f.models;
   [["modelsel", "model"], ["modelsel2", "model2"]].forEach(([id, key], i) => {
     if (!have.includes(S[key])) S[key] = have[Math.min(i, have.length - 1)] || S.f.models[0];
     const sel = $(id); sel.innerHTML = "";
-    S.f.models.forEach((m) => {
-      const o = el("option", null, modelInfo(m).label);
-      o.value = m; o.disabled = !have.includes(m); sel.appendChild(o);
+    have.forEach((m) => {
+      const o = el("option", null, modelLabel(m));
+      o.value = m; sel.appendChild(o);
     });
     sel.value = S[key];
     sel.onchange = async () => { S[key] = sel.value; await render(); };
@@ -909,7 +919,7 @@ async function draw() {
     title.innerHTML = "";
     const sw = el("span", "sw"); sw.style.background = `var(${info.css_var}, ${info.color})`;
     title.append(sw, document.createTextNode(
-      `${info.label} · ${meta.label || S.variable}${unit ? ` (${unit})` : ""} · +${lead} h`));
+      `${modelLabel(model)} · ${meta.label || S.variable}${unit ? ` (${unit})` : ""} · +${lead} h`));
     try {
       const f = await loadField(fileFor(model, kind, lead), scale, S.enc);
       S.fields = S.fields || {}; S.fields[mapId] = f;
@@ -1118,7 +1128,7 @@ function pointBody(latlng) {
     const info = modelInfo(model);
     const tr = el("tr");
     const sw = el("span", "sw"); sw.style.background = `var(${info.css_var}, ${info.color})`;
-    const td = el("td", "name"); td.append(sw, document.createTextNode(info.label));
+    const td = el("td", "name"); td.append(sw, document.createTextNode(modelLabel(model)));
     tr.append(td, el("td", "val", Number.isNaN(v) ? "—" : `${conv(v).toFixed(u.decimals)} ${u.label}`));
     tbl.append(tr);
   }
@@ -1153,7 +1163,7 @@ async function cityBody(city) {
     const conv = S.kind === "error" ? u.delta : u.abs;
     const tbl = el("table", "poptbl");
     const tr = el("tr");
-    tr.append(el("td", "name", modelInfo(S.model).label),
+    tr.append(el("td", "name", modelLabel(S.model)),
               el("td", "val", Number.isNaN(v) ? "—" : `${conv(v).toFixed(u.decimals)} ${u.label}`));
     tbl.append(tr);
     box.append(tbl, el("div", "popfoot",
@@ -1189,7 +1199,7 @@ async function cityBody(city) {
     const info = modelInfo(r.id);
     const tr = el("tr");
     const sw = el("span", "sw"); sw.style.background = `var(${info.css_var}, ${info.color})`;
-    const td = el("td", "name"); td.append(sw, document.createTextNode(info.label));
+    const td = el("td", "name"); td.append(sw, document.createTextNode(modelLabel(r.id)));
     // Errors are differences, so they take the delta conversion — u.abs here
     // would render a 2 K miss as -271 °C. units.js exists for this.
     const err = r.err == null ? ""

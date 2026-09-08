@@ -167,7 +167,13 @@ conda run -n earth2 python -m scoreboard.export [--init YYYY-MM-DDTHH] [--force]
 ```
 
 - **`models.json`** — `config.yaml`'s `display.models`, the one source of model
-  labels and colours for all three pages.
+  labels and colours for all three pages. An entry's optional
+  `variable_labels: {tp06: {label, short}}` renames the model wherever that one
+  variable is drawn and nowhere else — AIFS's precipitation is shown as
+  EyeClimate (the leaderboard's precipitation section, the map's precip layer,
+  the compare page's precip series), because the EyeClimate entry itself
+  (`fengwu`) has no precipitation head. `publish.py` carries it into
+  `index.html`'s `MODELS` as `names`.
 - **`points/<init>/<city>.json`** — every model's forecast and the verification
   truth at one lat/lon, at every lead. The forecast half is reshaped from
   `data/points.parquet`; the truth half is fetched here, because ERA5 and GFS

@@ -36,14 +36,29 @@ from . import sources
 
 
 def models_payload(cfg: dict) -> list[dict]:
-    """The `display.models` registry, in legend/draw order."""
+    """The `display.models` registry, in legend/draw order.
+
+    An entry's optional `variable_labels` ({variable: {label, short}}) renames
+    the model wherever that one variable is drawn — AIFS's precipitation is
+    shown as EyeClimate — and is passed through to models.json as is; the
+    pages resolve it per draw. Checked here so a half-written override fails
+    at export time rather than drawing an undefined name.
+    """
     try:
-        return cfg["display"]["models"]
+        models = cfg["display"]["models"]
     except KeyError as e:
         raise RuntimeError(
             "config.yaml has no `display.models` block — every page reads model "
             "labels and colours from it, so it is required."
         ) from e
+    for m in models:
+        for var, d in (m.get("variable_labels") or {}).items():
+            if not isinstance(d, dict) or not str(d.get("label", "")).strip():
+                raise RuntimeError(
+                    f"config.yaml `display.models` {m.get('id')!r}: "
+                    f"variable_labels.{var} needs a `label` (optionally a "
+                    "`short`).")
+    return models
 
 
 # Ramp names docs/lib/js/colormap.js defines. Kept here so a typo in
@@ -108,6 +123,14 @@ def models_js_array(cfg: dict) -> str:
         parts = [f'id: "{m["id"]}"', f'name: "{m["label"]}"']
         if m.get("short"):
             parts.append(f'short: "{m["short"]}"')
+        # Per-variable names, as `names: { tp06: { name, short } }` — the
+        # precipitation section reads names.tp06 (index.html, precipDef).
+        names = ", ".join(
+            f'{v}: {{ name: "{d["label"]}"'
+            + (f', short: "{d["short"]}"' if d.get("short") else "") + " }"
+            for v, d in (m.get("variable_labels") or {}).items())
+        if names:
+            parts.append(f"names: {{ {names} }}")
         parts.append(f'cvar: "{m["css_var"]}"')
         parts.append(
             f'hex: {{ light: "{m["color"]}", dark: "{m["color_dark"]}" }}'

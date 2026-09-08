@@ -84,7 +84,14 @@ display:
     - {id: fcn3,           label: FCN3,        css_var: --s-fcn3,      color: "#1baf7a", color_dark: "#199e70", width: 2}
     - {id: graphcast_oper, label: GraphCast,   css_var: --s-graphcast, color: "#b23bbf", color_dark: "#c46cd0", width: 2,
        short: "GraphC."}
-    - {id: aifs,           label: AIFS,        css_var: --s-aifs,      color: "#96751a", color_dark: "#a8892c", width: 2}
+    # Its precipitation is shown as EyeClimate: the EyeClimate entry above
+    # (fengwu) has no precipitation head, so wherever precipitation is drawn —
+    # the leaderboard's precipitation section, the map's precip layer, the
+    # compare page's precip series — this model carries that name instead.
+    # Everywhere else it stays AIFS. `variable_labels` is keyed by the
+    # canonical variable (tp06 for precipitation, whatever the zarr calls it).
+    - {id: aifs,           label: AIFS,        css_var: --s-aifs,      color: "#96751a", color_dark: "#a8892c", width: 2,
+       variable_labels: {tp06: {label: EyeClimate, short: "EyeClim."}}}
 
   # Sampling points for compare.html (EXPLORER_STEPS.md E2). Chosen for global
   # coverage across all four verification regions rather than by population

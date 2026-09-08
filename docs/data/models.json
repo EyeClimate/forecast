@@ -81,6 +81,12 @@
     "css_var": "--s-aifs",
     "color": "#96751a",
     "color_dark": "#a8892c",
-    "width": 2
+    "width": 2,
+    "variable_labels": {
+      "tp06": {
+        "label": "EyeClimate",
+        "short": "EyeClim."
+      }
+    }
   }
 ]

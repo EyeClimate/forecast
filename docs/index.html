@@ -202,7 +202,7 @@ const MODELS = [
   { id: "sfno", name: "SFNO", cvar: "--s-sfno", hex: { light: "#eb6834", dark: "#d95926" }, w: 2 },
   { id: "fcn3", name: "FCN3", cvar: "--s-fcn3", hex: { light: "#1baf7a", dark: "#199e70" }, w: 2 },
   { id: "graphcast_oper", name: "GraphCast", short: "GraphC.", cvar: "--s-graphcast", hex: { light: "#b23bbf", dark: "#c46cd0" }, w: 2 },
-  { id: "aifs", name: "AIFS", cvar: "--s-aifs", hex: { light: "#96751a", dark: "#a8892c" }, w: 2 },
+  { id: "aifs", name: "AIFS", names: { tp06: { name: "EyeClimate", short: "EyeClim." } }, cvar: "--s-aifs", hex: { light: "#96751a", dark: "#a8892c" }, w: 2 },
 ];
 // Charts start with the headline subset — precip-native flagship models plus
 // the baseline; the full roster (10 series) exceeds a readable color budget.
@@ -709,7 +709,14 @@ function renderSkillTable() {
 }
 
 /* ---------- precipitation ---------- */
-const precipModels = () => MODELS.filter((m) => state.activePr.has(m.id) && PRECIP_VAR[m.id]);
+// A model can carry a different name in this section: `names.tp06` on its
+// MODELS entry (config.yaml `display.models[].variable_labels`). The
+// precipitation shown as EyeClimate is AIFS's, because the EyeClimate entry
+// itself (fengwu) has no precipitation head. Keyed by the canonical precip
+// variable regardless of which of tp/tp06 the model stores.
+const precipDef = (m) => { const o = (m.names || {}).tp06; return o ? { ...m, name: o.name, short: o.short } : m; };
+const precipRoster = () => MODELS.filter((m) => PRECIP_VAR[m.id]).map(precipDef);
+const precipModels = () => precipRoster().filter((m) => state.activePr.has(m.id));
 function renderPrecip() {
   const grid = $("pr-grid");
   grid.textContent = "";
@@ -756,7 +763,7 @@ function renderControls() {
   segControl($("seg-metric"), METRICS, () => state.metric, (v) => { state.metric = v; });
   modelToggle($("lb-models"), state.activeLb);
   modelToggle($("sk-models"), state.activeSk);
-  modelToggle($("pr-models"), state.activePr, MODELS.filter((m) => PRECIP_VAR[m.id]));
+  modelToggle($("pr-models"), state.activePr, precipRoster());
   windowControl();
   segControl($("seg-lead"), [{ id: 24, name: "+24 h" }, { id: 72, name: "+72 h" }, { id: 120, name: "+120 h" }], () => state.lbLead, (v) => { state.lbLead = v; });
   segControl($("seg-thr"), THRESHOLDS, () => state.thr, (v) => { state.thr = v; });

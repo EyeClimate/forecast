@@ -58,6 +58,11 @@ const el = (t, cls, txt) => {
 const isPrecip = (v) => v === "tp06" || v === "tp";
 
 const modelInfo = (id) => S.models.find((m) => m.id === id) || { id, label: id, color: "#888" };
+// Name for one variable: `variable_labels` on the models.json entry renames a
+// model for that variable only (AIFS's precipitation is EyeClimate's — the
+// EyeClimate entry, fengwu, has no precipitation head). Resolved per draw.
+const modelLabel = (id, variable) =>
+  ((modelInfo(id).variable_labels || {})[variable] || {}).label || modelInfo(id).label;
 
 // Short tab labels, matching the leaderboard's so the two pages name the same
 // variable the same way. The manifest carries `label`/`units`/`decimals` but no
@@ -185,7 +190,7 @@ function renderChips() {
     b.setAttribute("aria-pressed", String(on));
     const sw = el("span", info.baseline ? "swatch dash" : "swatch");
     sw.style.background = `var(${info.css_var}, ${info.color})`;
-    b.append(sw, document.createTextNode(info.label));
+    b.append(sw, document.createTextNode(modelLabel(id, S.variable)));
     b.onclick = () => {
       if (on) S.active.delete(id); else S.active.add(id);
       render();
@@ -203,7 +208,7 @@ function seriesFor(variable) {
     const s = (S.doc.models[id] || {})[variable];
     if (!s || s.status !== "ok" || !s.values) continue;
     const info = modelInfo(id);
-    out.push({ id, label: info.label, color: `var(${info.css_var}, ${info.color})`,
+    out.push({ id, label: modelLabel(id, variable), color: `var(${info.css_var}, ${info.color})`,
                raw: info.color, values: s.values, baseline: !!info.baseline,
                width: info.baseline ? 1.5 : 2 });
   }
@@ -219,9 +224,9 @@ function absenceNotes(variable) {
   for (const id of S.doc.models_expected) {
     const s = (S.doc.models[id] || {})[variable];
     if (!s) continue;
-    if (s.status === "no_variable") noVar.push(modelInfo(id).label);
-    else if (s.status === "truth_pending") pending.push(modelInfo(id).label);
-    else if (s.status === "unavailable") unavailable.push(modelInfo(id).label);
+    if (s.status === "no_variable") noVar.push(modelLabel(id, variable));
+    else if (s.status === "truth_pending") pending.push(modelLabel(id, variable));
+    else if (s.status === "unavailable") unavailable.push(modelLabel(id, variable));
   }
   return { noVar, pending, unavailable };
 }
