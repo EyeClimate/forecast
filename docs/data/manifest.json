@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-09-08T11:52:12Z",
+ "generated": "2026-09-09T12:39:43Z",
  "series_statuses": [
   "ok",
   "no_variable",
@@ -4632,7 +4632,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-08T00:00:00Z",
+   "truth_valid_through": "2026-09-09T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -4722,7 +4722,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 395262
+    "bytes": 396735
    }
   },
   {
@@ -4731,7 +4731,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-08T00:00:00Z",
+   "truth_valid_through": "2026-09-09T06:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -4821,7 +4821,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 394251
+    "bytes": 396100
    }
   },
   {
@@ -4830,7 +4830,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-08T00:00:00Z",
+   "truth_valid_through": "2026-09-09T06:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -4920,7 +4920,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 392529
+    "bytes": 394378
    }
   },
   {
@@ -4929,7 +4929,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-08T00:00:00Z",
+   "truth_valid_through": "2026-09-09T06:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -5019,7 +5019,92 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 391224
+    "bytes": 393073
+   }
+  },
+  {
+   "init_time": "2026-09-08T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-09T06:00:00Z",
+   "models": [
+    "fuxi",
+    "persistence"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-08T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 133534
    }
   }
  ],
@@ -5212,7 +5297,7 @@
   "2026-09-01T00": {
    "schema_version": 1,
    "init_time": "2026-09-01T00:00:00Z",
-   "generated": "2026-09-08T11:51:25Z",
+   "generated": "2026-09-09T12:37:29Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5397,7 +5482,7 @@
   "2026-09-02T00": {
    "schema_version": 1,
    "init_time": "2026-09-02T00:00:00Z",
-   "generated": "2026-09-08T11:51:34Z",
+   "generated": "2026-09-09T12:38:01Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5582,7 +5667,7 @@
   "2026-09-03T00": {
    "schema_version": 1,
    "init_time": "2026-09-03T00:00:00Z",
-   "generated": "2026-09-08T11:51:42Z",
+   "generated": "2026-09-09T12:38:10Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5767,7 +5852,7 @@
   "2026-09-04T00": {
    "schema_version": 1,
    "init_time": "2026-09-04T00:00:00Z",
-   "generated": "2026-09-08T11:51:50Z",
+   "generated": "2026-09-09T12:38:46Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5879,6 +5964,10 @@
        "96": [
         -44.31,
         44.31
+       ],
+       "120": [
+        -35.05,
+        35.05
        ]
       },
       "status": {
@@ -5886,7 +5975,7 @@
        "48": "ok",
        "72": "ok",
        "96": "ok",
-       "120": "truth_pending"
+       "120": "ok"
       }
      }
     },
@@ -5941,14 +6030,14 @@
      }
     }
    },
-   "png_count": 111,
+   "png_count": 120,
    "png_count_when_complete": 150,
-   "bytes": 2316052
+   "bytes": 2540509
   },
   "2026-09-05T00": {
    "schema_version": 1,
    "init_time": "2026-09-05T00:00:00Z",
-   "generated": "2026-09-08T11:51:58Z",
+   "generated": "2026-09-09T12:39:02Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6056,13 +6145,17 @@
        "72": [
         -39.92,
         39.92
+       ],
+       "96": [
+        -36.667,
+        36.667
        ]
       },
       "status": {
        "24": "ok",
        "48": "ok",
        "72": "ok",
-       "96": "truth_pending",
+       "96": "ok",
        "120": "truth_pending"
       }
      }
@@ -6118,14 +6211,14 @@
      }
     }
    },
-   "png_count": 102,
+   "png_count": 111,
    "png_count_when_complete": 150,
-   "bytes": 2108044
+   "bytes": 2326381
   },
   "2026-09-06T00": {
    "schema_version": 1,
    "init_time": "2026-09-06T00:00:00Z",
-   "generated": "2026-09-08T11:52:05Z",
+   "generated": "2026-09-09T12:39:19Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6229,12 +6322,16 @@
        "48": [
         -42.296,
         42.296
+       ],
+       "72": [
+        -33.96,
+        33.96
        ]
       },
       "status": {
        "24": "ok",
        "48": "ok",
-       "72": "truth_pending",
+       "72": "ok",
        "96": "truth_pending",
        "120": "truth_pending"
       }
@@ -6291,14 +6388,14 @@
      }
     }
    },
-   "png_count": 93,
+   "png_count": 102,
    "png_count_when_complete": 150,
-   "bytes": 1883158
+   "bytes": 2104843
   },
   "2026-09-07T00": {
    "schema_version": 1,
    "init_time": "2026-09-07T00:00:00Z",
-   "generated": "2026-09-08T11:52:12Z",
+   "generated": "2026-09-09T12:39:35Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6398,11 +6495,15 @@
        "24": [
         -30.337,
         30.337
+       ],
+       "48": [
+        -25.56,
+        25.56
        ]
       },
       "status": {
        "24": "ok",
-       "48": "truth_pending",
+       "48": "ok",
        "72": "truth_pending",
        "96": "truth_pending",
        "120": "truth_pending"
@@ -6460,9 +6561,153 @@
      }
     }
    },
-   "png_count": 84,
+   "png_count": 93,
    "png_count_when_complete": 150,
-   "bytes": 1671548
+   "bytes": 1913413
+  },
+  "2026-09-08T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-08T00:00:00Z",
+   "generated": "2026-09-09T12:39:43Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-08T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "fuxi",
+    "persistence"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "fuxi",
+      "persistence"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        207.522,
+        314.131
+       ],
+       "48": [
+        207.349,
+        314.847
+       ],
+       "72": [
+        205.08,
+        313.751
+       ],
+       "96": [
+        205.439,
+        313.002
+       ],
+       "120": [
+        204.539,
+        312.875
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -23.029,
+        23.029
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "fuxi",
+      "persistence"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 22,
+   "png_count_when_complete": 40,
+   "bytes": 475262
   }
  }
 }
