@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-09-09T12:39:43Z",
+ "generated": "2026-09-10T13:10:09Z",
  "series_statuses": [
   "ok",
   "no_variable",
@@ -4731,7 +4731,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-09T06:00:00Z",
+   "truth_valid_through": "2026-09-10T00:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -4821,7 +4821,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 396100
+    "bytes": 397183
    }
   },
   {
@@ -4830,7 +4830,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-09T06:00:00Z",
+   "truth_valid_through": "2026-09-10T06:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -4920,7 +4920,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 394378
+    "bytes": 395826
    }
   },
   {
@@ -4929,7 +4929,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-09T06:00:00Z",
+   "truth_valid_through": "2026-09-10T06:00:00Z",
    "models": [
     "aurora",
     "fuxi",
@@ -5019,7 +5019,7 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 393073
+    "bytes": 394521
    }
   },
   {
@@ -5028,7 +5028,7 @@
    "tier": "provisional",
    "init_source": "gfs",
    "truth_source": "gfs_analysis",
-   "truth_valid_through": "2026-09-09T06:00:00Z",
+   "truth_valid_through": "2026-09-10T06:00:00Z",
    "models": [
     "fuxi",
     "persistence"
@@ -5104,7 +5104,92 @@
      "tehran",
      "tokyo"
     ],
-    "bytes": 133534
+    "bytes": 134982
+   }
+  },
+  {
+   "init_time": "2026-09-09T00:00:00Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "truth_valid_through": "2026-09-10T06:00:00Z",
+   "models": [
+    "fuxi",
+    "persistence"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence"
+   ],
+   "leads": [
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    48,
+    54,
+    60,
+    66,
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120
+   ],
+   "variables": [
+    "msl",
+    "t2m",
+    "t850",
+    "tp06",
+    "u10m",
+    "v10m",
+    "z500"
+   ],
+   "points": {
+    "dir": "points/2026-09-09T00",
+    "cities": [
+     "bangkok",
+     "beijing",
+     "buenos-aires",
+     "cairo",
+     "chicago",
+     "delhi",
+     "dhaka",
+     "istanbul",
+     "jakarta",
+     "johannesburg",
+     "karachi",
+     "kinshasa",
+     "kolkata",
+     "lagos",
+     "lima",
+     "london",
+     "los-angeles",
+     "manila",
+     "mexico-city",
+     "moscow",
+     "mumbai",
+     "nairobi",
+     "new-york",
+     "paris",
+     "rio-de-janeiro",
+     "sao-paulo",
+     "seoul",
+     "shanghai",
+     "singapore",
+     "sydney",
+     "tehran",
+     "tokyo"
+    ],
+    "bytes": 133280
    }
   }
  ],
@@ -5482,7 +5567,7 @@
   "2026-09-02T00": {
    "schema_version": 1,
    "init_time": "2026-09-02T00:00:00Z",
-   "generated": "2026-09-09T12:38:01Z",
+   "generated": "2026-09-10T13:08:19Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5667,7 +5752,7 @@
   "2026-09-03T00": {
    "schema_version": 1,
    "init_time": "2026-09-03T00:00:00Z",
-   "generated": "2026-09-09T12:38:10Z",
+   "generated": "2026-09-10T13:08:39Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -5852,7 +5937,7 @@
   "2026-09-04T00": {
    "schema_version": 1,
    "init_time": "2026-09-04T00:00:00Z",
-   "generated": "2026-09-09T12:38:46Z",
+   "generated": "2026-09-10T13:08:54Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6037,7 +6122,7 @@
   "2026-09-05T00": {
    "schema_version": 1,
    "init_time": "2026-09-05T00:00:00Z",
-   "generated": "2026-09-09T12:39:02Z",
+   "generated": "2026-09-10T13:09:19Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6149,6 +6234,10 @@
        "96": [
         -36.667,
         36.667
+       ],
+       "120": [
+        -40.672,
+        40.672
        ]
       },
       "status": {
@@ -6156,7 +6245,7 @@
        "48": "ok",
        "72": "ok",
        "96": "ok",
-       "120": "truth_pending"
+       "120": "ok"
       }
      }
     },
@@ -6211,14 +6300,14 @@
      }
     }
    },
-   "png_count": 111,
+   "png_count": 120,
    "png_count_when_complete": 150,
-   "bytes": 2326381
+   "bytes": 2538669
   },
   "2026-09-06T00": {
    "schema_version": 1,
    "init_time": "2026-09-06T00:00:00Z",
-   "generated": "2026-09-09T12:39:19Z",
+   "generated": "2026-09-10T13:09:34Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6326,13 +6415,17 @@
        "72": [
         -33.96,
         33.96
+       ],
+       "96": [
+        -34.62,
+        34.62
        ]
       },
       "status": {
        "24": "ok",
        "48": "ok",
        "72": "ok",
-       "96": "truth_pending",
+       "96": "ok",
        "120": "truth_pending"
       }
      }
@@ -6388,14 +6481,14 @@
      }
     }
    },
-   "png_count": 102,
+   "png_count": 111,
    "png_count_when_complete": 150,
-   "bytes": 2104843
+   "bytes": 2327429
   },
   "2026-09-07T00": {
    "schema_version": 1,
    "init_time": "2026-09-07T00:00:00Z",
-   "generated": "2026-09-09T12:39:35Z",
+   "generated": "2026-09-10T13:10:00Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6499,12 +6592,16 @@
        "48": [
         -25.56,
         25.56
+       ],
+       "72": [
+        -36.996,
+        36.996
        ]
       },
       "status": {
        "24": "ok",
        "48": "ok",
-       "72": "truth_pending",
+       "72": "ok",
        "96": "truth_pending",
        "120": "truth_pending"
       }
@@ -6561,14 +6658,14 @@
      }
     }
    },
-   "png_count": 93,
+   "png_count": 102,
    "png_count_when_complete": 150,
-   "bytes": 1913413
+   "bytes": 2128526
   },
   "2026-09-08T00": {
    "schema_version": 1,
    "init_time": "2026-09-08T00:00:00Z",
-   "generated": "2026-09-09T12:39:43Z",
+   "generated": "2026-09-10T13:10:03Z",
    "regime": "realtime",
    "tier": "provisional",
    "init_source": "gfs",
@@ -6647,6 +6744,154 @@
        "24": [
         -23.029,
         23.029
+       ],
+       "48": [
+        -25.872,
+        25.872
+       ]
+      },
+      "status": {
+       "24": "ok",
+       "48": "ok",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    },
+    "tp06": {
+     "units": "mm/6h",
+     "models": [
+      "fuxi",
+      "persistence"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        0.0,
+        25.0
+       ],
+       "48": [
+        0.0,
+        25.0
+       ],
+       "72": [
+        0.0,
+        25.0
+       ],
+       "96": [
+        0.0,
+        25.0
+       ],
+       "120": [
+        0.0,
+        25.0
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {},
+      "status": {
+       "24": "truth_pending",
+       "48": "truth_pending",
+       "72": "truth_pending",
+       "96": "truth_pending",
+       "120": "truth_pending"
+      }
+     }
+    }
+   },
+   "png_count": 24,
+   "png_count_when_complete": 40,
+   "bytes": 530617
+  },
+  "2026-09-09T00": {
+   "schema_version": 1,
+   "init_time": "2026-09-09T00:00:00Z",
+   "generated": "2026-09-10T13:10:08Z",
+   "regime": "realtime",
+   "tier": "provisional",
+   "init_source": "gfs",
+   "truth_source": "gfs_analysis",
+   "dir": "fields/2026-09-09T00",
+   "grid": {
+    "resolution_deg": 1.0,
+    "width": 360,
+    "height": 181,
+    "lat_start": 90.0,
+    "lat_step": -1.0,
+    "lon_start": 0.0,
+    "lon_step": 1.0
+   },
+   "encoding": {
+    "dtype": "uint8",
+    "missing": 0,
+    "min_byte": 1,
+    "max_byte": 255,
+    "levels": 254,
+    "decode": "value = scale[0] + (byte - min_byte) * (scale[1] - scale[0]) / levels"
+   },
+   "leads": [
+    24,
+    48,
+    72,
+    96,
+    120
+   ],
+   "models": [
+    "fuxi",
+    "persistence"
+   ],
+   "models_expected": [
+    "fuxi",
+    "persistence"
+   ],
+   "variables": {
+    "t2m": {
+     "units": "K",
+     "models": [
+      "fuxi",
+      "persistence"
+     ],
+     "forecast": {
+      "file": "f{lead}.png",
+      "scales": {
+       "24": [
+        204.91,
+        314.439
+       ],
+       "48": [
+        203.478,
+        315.119
+       ],
+       "72": [
+        204.211,
+        314.034
+       ],
+       "96": [
+        205.406,
+        314.034
+       ],
+       "120": [
+        204.882,
+        314.034
+       ]
+      }
+     },
+     "error": {
+      "file": "e{lead}.png",
+      "symmetric": true,
+      "definition": "model - truth",
+      "truth_source": "gfs_analysis",
+      "scales": {
+       "24": [
+        -20.002,
+        20.002
        ]
       },
       "status": {
@@ -6707,7 +6952,7 @@
    },
    "png_count": 22,
    "png_count_when_complete": 40,
-   "bytes": 475262
+   "bytes": 479189
   }
  }
 }
