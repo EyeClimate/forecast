@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "init_time": "2026-09-07T00:00:00Z",
- "generated": "2026-09-11T13:51:06Z",
+ "generated": "2026-09-12T14:22:49Z",
  "regime": "realtime",
  "tier": "provisional",
  "init_source": "gfs",
@@ -113,6 +113,10 @@
      "96": [
       -38.104,
       38.104
+     ],
+     "120": [
+      -35.547,
+      35.547
      ]
     },
     "status": {
@@ -120,7 +124,7 @@
      "48": "ok",
      "72": "ok",
      "96": "ok",
-     "120": "truth_pending"
+     "120": "ok"
     }
    }
   },
@@ -175,7 +179,7 @@
    }
   }
  },
- "png_count": 111,
+ "png_count": 120,
  "png_count_when_complete": 150,
- "bytes": 2342736
+ "bytes": 2563875
 }

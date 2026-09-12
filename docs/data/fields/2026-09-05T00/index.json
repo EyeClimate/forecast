@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "init_time": "2026-09-05T00:00:00Z",
- "generated": "2026-09-11T13:50:28Z",
+ "generated": "2026-09-12T14:22:03Z",
  "regime": "realtime",
  "tier": "provisional",
  "init_source": "gfs",
